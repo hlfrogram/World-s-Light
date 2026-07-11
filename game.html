@@ -1,0 +1,95 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빛의 세계 - 텍스트 RPG</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="game-container">
+        <header class="game-header">
+            <h1 id="gameTitle">빛의 세계</h1>
+            <div class="player-info">
+                <span id="playerName">플레이어</span> | 
+                <span id="playerClass">클래스</span> |
+                <span id="currentStage">진행도: 1차</span>
+                <button id="logoutBtn" class="btn-logout">로그아웃</button>
+            </div>
+        </header>
+
+        <main class="game-main">
+            <!-- 화면 내용이 여기 표시됨 -->
+            <div id="gameContent" class="game-content">
+                <!-- 동적 콘텐츠 -->
+            </div>
+
+            <!-- 인벤토리 표시 -->
+            <div class="inventory-section">
+                <h3>📊 스탯</h3>
+                <div id="statsDisplay" class="stats-display">
+                    <div class="stat-row">
+                        <span>HP:</span> <span id="statHp">10</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>MP:</span> <span id="statMp">5</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>공격력:</span> <span id="statAtk">10</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>치명타:</span> <span id="statCrit">10</span>
+                    </div>
+                    <div class="stat-row">
+                        <span>민첩:</span> <span id="statAgi">5</span>
+                    </div>
+                </div>
+
+                <h3>🎒 인벤토리</h3>
+                <div id="inventory" class="inventory-list">
+                    <!-- 아이템 목록 -->
+                </div>
+
+                <h3>🔍 히든 피스</h3>
+                <div id="hiddenPieces" class="hidden-pieces">
+                    <div>수집된 피스: <span id="hiddenCount">0</span>/3</div>
+                </div>
+            </div>
+        </main>
+
+        <footer class="game-footer">
+            <!-- 하단 명령어 버튼들 -->
+            <div id="commandButtons" class="command-buttons">
+                <!-- 동적 버튼 생성 -->
+            </div>
+            <div class="input-section">
+                <input type="text" id="userInput" placeholder="명령어를 입력하세요..." autocomplete="off">
+                <button id="submitBtn" class="btn-submit">실행</button>
+                <button id="saveBtn" class="btn-save">세이브</button>
+                <button id="loadBtn" class="btn-load">로드</button>
+            </div>
+        </footer>
+    </div>
+
+    <!-- 모달: 게임 오버 -->
+    <div id="gameOverModal" class="modal">
+        <div class="modal-content">
+            <h2 id="gameOverTitle">게임 오버</h2>
+            <p id="gameOverMessage"></p>
+            <button id="restartBtn" class="btn-primary">재시작</button>
+        </div>
+    </div>
+
+    <!-- 모달: 엔딩 -->
+    <div id="endingModal" class="modal">
+        <div class="modal-content">
+            <h2 id="endingTitle">엔딩</h2>
+            <p id="endingMessage"></p>
+            <button id="endingRestartBtn" class="btn-primary">새로 시작</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="game.js"></script>
+</body>
+</html>

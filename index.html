@@ -1,0 +1,370 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>빛의 세계 - 로그인</title>
+    <style>
+        :root {
+            --primary-color: #1a1a1a;
+            --secondary-color: #2d2d2d;
+            --accent-color: #ffd700;
+            --text-color: #e0e0e0;
+            --danger: #ff5252;
+            --success: #4caf50;
+        }
+
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2d2d2d 100%);
+            color: var(--text-color);
+            font-family: 'Courier New', monospace;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .auth-container {
+            background-color: var(--secondary-color);
+            border: 2px solid var(--accent-color);
+            border-radius: 8px;
+            padding: 40px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 0 30px rgba(255, 215, 0, 0.2);
+        }
+
+        .auth-container h1 {
+            text-align: center;
+            color: var(--accent-color);
+            margin-bottom: 10px;
+            font-size: 32px;
+            text-shadow: 0 0 10px rgba(255, 215, 0, 0.3);
+            letter-spacing: 2px;
+        }
+
+        .auth-container p {
+            text-align: center;
+            color: #999;
+            margin-bottom: 30px;
+            font-size: 12px;
+        }
+
+        .auth-form {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .form-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        .form-group label {
+            color: var(--accent-color);
+            font-size: 12px;
+            font-weight: bold;
+        }
+
+        .form-group input {
+            background-color: rgba(0, 0, 0, 0.5);
+            border: 1px solid #444;
+            color: var(--text-color);
+            padding: 10px 12px;
+            border-radius: 4px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            transition: all 0.3s;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-color: var(--accent-color);
+            box-shadow: 0 0 8px rgba(255, 215, 0, 0.2);
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        .btn {
+            background-color: var(--accent-color);
+            color: #000;
+            border: none;
+            padding: 10px;
+            border-radius: 4px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: all 0.3s;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+        }
+
+        .btn:hover {
+            background-color: #ffff00;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(255, 215, 0, 0.3);
+        }
+
+        .btn:active {
+            transform: translateY(0);
+        }
+
+        .btn-secondary {
+            background-color: transparent;
+            color: var(--accent-color);
+            border: 1px solid var(--accent-color);
+        }
+
+        .btn-secondary:hover {
+            background-color: rgba(255, 215, 0, 0.1);
+            color: #ffff00;
+            border-color: #ffff00;
+        }
+
+        .message {
+            padding: 10px;
+            border-radius: 4px;
+            text-align: center;
+            font-size: 12px;
+            margin-bottom: 15px;
+            display: none;
+        }
+
+        .message.show {
+            display: block;
+        }
+
+        .error-message {
+            background-color: rgba(255, 82, 82, 0.2);
+            border: 1px solid var(--danger);
+            color: var(--danger);
+        }
+
+        .success-message {
+            background-color: rgba(76, 175, 80, 0.2);
+            border: 1px solid var(--success);
+            color: var(--success);
+        }
+
+        .toggle-form {
+            text-align: center;
+            margin-top: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .toggle-form button {
+            background: none;
+            border: none;
+            color: var(--accent-color);
+            cursor: pointer;
+            text-decoration: underline;
+            font-family: 'Courier New', monospace;
+            font-size: 12px;
+            transition: color 0.2s;
+        }
+
+        .toggle-form button:hover {
+            color: #ffff00;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            font-size: 12px;
+            color: #999;
+        }
+
+        .loading.show {
+            display: block;
+        }
+
+        @media (max-width: 480px) {
+            .auth-container {
+                padding: 30px 20px;
+            }
+
+            .auth-container h1 {
+                font-size: 24px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="auth-container">
+        <h1>빛의 세계</h1>
+        <p>게임에 접속하세요</p>
+
+        <div id="errorMessage" class="message error-message"></div>
+        <div id="successMessage" class="message success-message"></div>
+        <div class="loading" id="loading">로딩 중...</div>
+
+        <!-- 로그인 폼 -->
+        <form id="loginForm" class="auth-form" style="display: block;">
+            <div class="form-group">
+                <label for="loginEmail">이메일</label>
+                <input type="email" id="loginEmail" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group">
+                <label for="loginPassword">비밀번호</label>
+                <input type="password" id="loginPassword" placeholder="8자 이상" required>
+            </div>
+            <button type="submit" class="btn">로그인</button>
+        </form>
+
+        <!-- 회원가입 폼 -->
+        <form id="signupForm" class="auth-form" style="display: none;">
+            <div class="form-group">
+                <label for="signupEmail">이메일</label>
+                <input type="email" id="signupEmail" placeholder="example@email.com" required>
+            </div>
+            <div class="form-group">
+                <label for="signupPassword">비밀번호</label>
+                <input type="password" id="signupPassword" placeholder="8자 이상" required>
+            </div>
+            <div class="form-group">
+                <label for="signupPasswordConfirm">비밀번호 확인</label>
+                <input type="password" id="signupPasswordConfirm" placeholder="비밀번호 확인" required>
+            </div>
+            <button type="submit" class="btn">회원가입</button>
+        </form>
+
+        <div class="toggle-form">
+            <span id="toggleText">계정이 없으신가요? </span>
+            <button type="button" id="toggleBtn">회원가입</button>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script>
+        // ===== Supabase 초기화 =====
+        const SUPABASE_URL = 'YOUR_SUPABASE_URL';
+        const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+        // ===== DOM 요소 =====
+        const loginForm = document.getElementById('loginForm');
+        const signupForm = document.getElementById('signupForm');
+        const toggleBtn = document.getElementById('toggleBtn');
+        const toggleText = document.getElementById('toggleText');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const loadingDiv = document.getElementById('loading');
+
+        // ===== 폼 전환 =====
+        toggleBtn.addEventListener('click', () => {
+            loginForm.style.display = loginForm.style.display === 'none' ? 'flex' : 'none';
+            signupForm.style.display = signupForm.style.display === 'none' ? 'flex' : 'none';
+            
+            if (loginForm.style.display === 'none') {
+                toggleText.textContent = '이미 계정이 있으신가요? ';
+                toggleBtn.textContent = '로그인';
+            } else {
+                toggleText.textContent = '계정이 없으신가요? ';
+                toggleBtn.textContent = '회원가입';
+            }
+        });
+
+        // ===== 로그인 =====
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+            loadingDiv.classList.add('show');
+
+            const email = document.getElementById('loginEmail').value;
+            const password = document.getElementById('loginPassword').value;
+
+            const { data, error } = await supabase.auth.signInWithPassword({
+                email,
+                password
+            });
+
+            loadingDiv.classList.remove('show');
+
+            if (error) {
+                showError('로그인 실패: ' + error.message);
+            } else if (data.user) {
+                showSuccess('로그인 성공! 게임으로 이동합니다...');
+                setTimeout(() => {
+                    window.location.href = 'game.html';
+                }, 1500);
+            }
+        });
+
+        // ===== 회원가입 =====
+        signupForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            clearMessages();
+
+            const email = document.getElementById('signupEmail').value;
+            const password = document.getElementById('signupPassword').value;
+            const confirmPassword = document.getElementById('signupPasswordConfirm').value;
+
+            if (password !== confirmPassword) {
+                showError('비밀번호가 일치하지 않습니다');
+                return;
+            }
+
+            if (password.length < 8) {
+                showError('비밀번호는 8자 이상이어야 합니다');
+                return;
+            }
+
+            loadingDiv.classList.add('show');
+
+            const { data, error } = await supabase.auth.signUp({
+                email,
+                password
+            });
+
+            loadingDiv.classList.remove('show');
+
+            if (error) {
+                showError('회원가입 실패: ' + error.message);
+            } else if (data.user) {
+                showSuccess('회원가입 성공! 로그인 페이지로 돌아갑니다...');
+                setTimeout(() => {
+                    loginForm.style.display = 'flex';
+                    signupForm.style.display = 'none';
+                    toggleText.textContent = '계정이 없으신가요? ';
+                    toggleBtn.textContent = '회원가입';
+                    document.getElementById('signupEmail').value = '';
+                    document.getElementById('signupPassword').value = '';
+                    document.getElementById('signupPasswordConfirm').value = '';
+                }, 2000);
+            }
+        });
+
+        // ===== 메시지 함수 =====
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('show');
+        }
+
+        function clearMessages() {
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+        }
+
+        // ===== 자동 로그인 확인 =====
+        window.addEventListener('load', async () => {
+            const { data: { user } } = await supabase.auth.getUser();
+            if (user) {
+                window.location.href = 'game.html';
+            }
+        });
+    </script>
+</body>
+</html>
