@@ -1,6 +1,6 @@
 // ===== Supabase 초기화 =====
-const SUPABASE_URL = 'YOUR_SUPABASE_URL';
-const SUPABASE_KEY = 'YOUR_SUPABASE_ANON_KEY';
+const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co/rest/v1/https://ptukyozancuplzwvvqma.supabase.co/rest/v1/';
+const SUPABASE_KEY = 'sb_publishable_dAhPMLcB0zEQW3QaSB3S_Q_PwSdj3__';
 const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== 게임 상태 =====
