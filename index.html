@@ -279,7 +279,7 @@
                 const isLoginVisible = $('loginForm').style.display !== 'none';
                 if (isLoginVisible) showSignupForm(); else showLoginForm();
             }
-        });
+        }, true);
 
         // ===== Supabase 초기화 =====
         const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co';
@@ -342,7 +342,7 @@
                     }, 2000);
                 }
             }
-        });
+        }, true);
 
         // ===== 자동 로그인 확인 =====
         window.addEventListener('load', async () => {
