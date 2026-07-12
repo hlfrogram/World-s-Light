@@ -919,7 +919,7 @@ function restartGame() { location.reload(); }
 function updatePlayerInfo() {
     document.getElementById('playerName').textContent = gameState.playerName;
     document.getElementById('playerClass').textContent = gameState.playerClass;
-    document.getElementById('currentStage').textContent = `진행도: ${gameState.stage}차`;
+    document.getElementById('currentStage').textContent = gameState.stage >= 2 ? `진행도: ${gameState.stage}차` : '';
     if (gameState.playerClass) hasUnsavedProgress = true;
 }
 function updateStats() {
