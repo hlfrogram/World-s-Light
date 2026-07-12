@@ -30,6 +30,14 @@ function createInitialGameState() {
     };
 }
 let gameState = createInitialGameState();
+let hasUnsavedProgress = false;
+
+window.addEventListener('beforeunload', (e) => {
+    if (hasUnsavedProgress) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
 
 const WEAPON_TIERS_BY_CLASS = {
     '검사': [
@@ -912,6 +920,7 @@ function updatePlayerInfo() {
     document.getElementById('playerName').textContent = gameState.playerName;
     document.getElementById('playerClass').textContent = gameState.playerClass;
     document.getElementById('currentStage').textContent = `진행도: ${gameState.stage}차`;
+    if (gameState.playerClass) hasUnsavedProgress = true;
 }
 function updateStats() {
     document.getElementById('statHp').textContent = round1(gameState.hp);
@@ -940,6 +949,7 @@ async function handleSave() {
     const { error } = await sbClient.from('game_saves').upsert({
         user_id: gameState.userId, game_data: JSON.stringify(gameState), updated_at: new Date(),
     }, { onConflict: 'user_id' });
+    if (!error) hasUnsavedProgress = false;
     alert(error ? '저장 실패: ' + error.message : '게임이 저장되었습니다!');
 }
 
@@ -950,6 +960,7 @@ async function handleLoad() {
         gameState.battle = null;
         updatePlayerInfo(); updateStats(); updateInventory();
         displayTravelMenu();
+        hasUnsavedProgress = false;
         alert('게임이 로드되었습니다!');
     } else {
         alert('저장된 데이터가 없습니다.');
@@ -972,5 +983,6 @@ async function handleReset() {
     updatePlayerInfo();
     updateStats();
     updateInventory();
+    hasUnsavedProgress = false;
     displayIntro();
 }
