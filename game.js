@@ -4,29 +4,32 @@ const SUPABASE_KEY = 'sb_publishable_dAhPMLcB0zEQW3QaSB3S_Q_PwSdj3__';
 const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== 게임 상태 =====
-let gameState = {
-    userId: null,
-    playerName: '',
-    playerClass: '',
-    playerColor: '',
-    stage: 1,
-    currentLocation: 'intro',
-    hp: 10, maxHp: 10,
-    mp: 5, maxMp: 5,
-    atk: 10, crit: 10, agi: 5,
-    lvatt: '', hdatt: '', hdattUnlocked: false,
-    weaponTier: 0, // 0=맨손, 1=녹슨 숏소드 ... 4=룬 블레이드
-    inventory: [],
-    hiddenPieces: [],
-    hiddenPiecesUnlocked: false,
-    hiddenWeaponAssembled: false,
-    hasHiddenWeapon: false,
-    exploreCount: {},
-    truthRevealed: {},
-    tutorialDone: false,
-    storySkipped: false,
-    battle: null,
-};
+function createInitialGameState() {
+    return {
+        userId: null,
+        playerName: '',
+        playerClass: '',
+        playerColor: '',
+        stage: 1,
+        currentLocation: 'intro',
+        hp: 10, maxHp: 10,
+        mp: 5, maxMp: 5,
+        atk: 10, crit: 10, agi: 5,
+        lvatt: '', hdatt: '', hdattUnlocked: false,
+        weaponTier: 0, // 0=맨손, 1=녹슨 숏소드 ... 4=룬 블레이드
+        inventory: [],
+        hiddenPieces: [],
+        hiddenPiecesUnlocked: false,
+        hiddenWeaponAssembled: false,
+        hasHiddenWeapon: false,
+        exploreCount: {},
+        truthRevealed: {},
+        tutorialDone: false,
+        storySkipped: false,
+        battle: null,
+    };
+}
+let gameState = createInitialGameState();
 
 const WEAPON_TIERS_BY_CLASS = {
     '검사': [
@@ -212,6 +215,7 @@ async function initGame() {
     document.getElementById('logoutBtn').addEventListener('click', handleLogout);
     document.getElementById('saveBtn').addEventListener('click', handleSave);
     document.getElementById('loadBtn').addEventListener('click', handleLoad);
+    document.getElementById('resetBtn').addEventListener('click', handleReset);
 
     const userInput = document.getElementById('userInput');
     userInput.addEventListener('keypress', (e) => {
@@ -950,4 +954,23 @@ async function handleLoad() {
     } else {
         alert('저장된 데이터가 없습니다.');
     }
+}
+
+async function handleReset() {
+    if (!confirm('정말 초기화하시겠습니까? 저장된 진행 상황이 모두 삭제되고 처음부터 다시 시작합니다.')) return;
+
+    await sbClient.from('game_saves').delete().eq('user_id', gameState.userId);
+
+    const userId = gameState.userId;
+    const playerName = gameState.playerName;
+    gameState = createInitialGameState();
+    gameState.userId = userId;
+    gameState.playerName = playerName;
+
+    document.getElementById('inventory').innerHTML = '';
+    document.getElementById('hiddenPieces').innerHTML = '';
+    updatePlayerInfo();
+    updateStats();
+    updateInventory();
+    displayIntro();
 }
