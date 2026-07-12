@@ -289,10 +289,10 @@
         // ===== Supabase 초기화 =====
         const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_dAhPMLcB0zEQW3QaSB3S_Q_PwSdj3__';
-        let supabase = null;
+        let sbClient = null;
         try {
             if (!window.supabase) throw new Error('Supabase 라이브러리를 불러오지 못했습니다.');
-            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+            sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
         } catch (err) {
             showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요. (' + err.message + ')');
         }
@@ -301,7 +301,7 @@
             if (e.target && e.target.id === 'loginForm') {
                 e.preventDefault();
                 clearMessages();
-                if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
+                if (!sbClient) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
 
                 const id = $('loginId').value.trim();
                 const password = $('loginPassword').value;
@@ -310,7 +310,7 @@
 
                 $('loading').classList.add('show');
 
-                const { data, error } = await supabase.auth.signInWithPassword({ email: idToEmail(id), password });
+                const { data, error } = await sbClient.auth.signInWithPassword({ email: idToEmail(id), password });
 
                 $('loading').classList.remove('show');
 
@@ -323,7 +323,7 @@
             } else if (e.target && e.target.id === 'signupForm') {
                 e.preventDefault();
                 clearMessages();
-                if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
+                if (!sbClient) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
 
                 const id = $('signupId').value.trim();
                 const password = $('signupPassword').value;
@@ -335,7 +335,7 @@
 
                 $('loading').classList.add('show');
 
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await sbClient.auth.signUp({
                     email: idToEmail(id),
                     password,
                     options: { data: { username: id } }
@@ -359,8 +359,8 @@
 
         // ===== 자동 로그인 확인 =====
         window.addEventListener('load', async () => {
-            if (!supabase) return;
-            const { data: { user } } = await supabase.auth.getUser();
+            if (!sbClient) return;
+            const { data: { user } } = await sbClient.auth.getUser();
             if (user) {
                 window.location.href = 'game.html';
             }

@@ -1,7 +1,7 @@
 // ===== Supabase 초기화 =====
 const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dAhPMLcB0zEQW3QaSB3S_Q_PwSdj3__';
-const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const sbClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 // ===== 게임 상태 =====
 let gameState = {
@@ -204,7 +204,7 @@ window.runChoice = runChoice;
 document.addEventListener('DOMContentLoaded', async () => { await initGame(); });
 
 async function initGame() {
-    const { data: { user } } = await supabase.auth.getUser();
+    const { data: { user } } = await sbClient.auth.getUser();
     if (!user) { window.location.href = 'index.html'; return; }
     gameState.userId = user.id;
     gameState.playerName = (user.user_metadata && user.user_metadata.username) || '플레이어';
@@ -221,7 +221,7 @@ async function initGame() {
     displayIntro();
 }
 
-async function handleLogout() { await supabase.auth.signOut(); window.location.href = 'index.html'; }
+async function handleLogout() { await sbClient.auth.signOut(); window.location.href = 'index.html'; }
 
 // ===== 이스터에그: 숨은 명령어 =====
 const MORSE_MESSAGE = ".... .. ... .. ... .- .-. . .-- .- .-. -.. ..-. --- .-. -.-- --- ..- .-. --. .- -- . .--. .-.. .- -.-- .-.-.- .--. .-.. . .- ... . .-.. . .- ...- . .- -- . ... ... .- --. . .-.-.-";
@@ -933,14 +933,14 @@ function updateInventory() {
 
 // ===== 저장 & 로드 =====
 async function handleSave() {
-    const { error } = await supabase.from('game_saves').upsert({
+    const { error } = await sbClient.from('game_saves').upsert({
         user_id: gameState.userId, game_data: JSON.stringify(gameState), updated_at: new Date(),
     }, { onConflict: 'user_id' });
     alert(error ? '저장 실패: ' + error.message : '게임이 저장되었습니다!');
 }
 
 async function handleLoad() {
-    const { data, error } = await supabase.from('game_saves').select('game_data').eq('user_id', gameState.userId).single();
+    const { data, error } = await sbClient.from('game_saves').select('game_data').eq('user_id', gameState.userId).single();
     if (!error && data) {
         Object.assign(gameState, JSON.parse(data.game_data));
         gameState.battle = null;
