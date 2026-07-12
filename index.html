@@ -209,8 +209,8 @@
         <!-- 로그인 폼 -->
         <form id="loginForm" class="auth-form" style="display: block;">
             <div class="form-group">
-                <label for="loginId">아이디</label>
-                <input type="text" id="loginId" placeholder="영문/숫자/밑줄 3~20자" required>
+                <label for="loginEmail">이메일</label>
+                <input type="email" id="loginEmail" placeholder="example@email.com" required>
             </div>
             <div class="form-group">
                 <label for="loginPassword">비밀번호</label>
@@ -222,8 +222,12 @@
         <!-- 회원가입 폼 -->
         <form id="signupForm" class="auth-form" style="display: none;">
             <div class="form-group">
-                <label for="signupId">아이디</label>
+                <label for="signupId">아이디 (캐릭터 이름)</label>
                 <input type="text" id="signupId" placeholder="영문/숫자/밑줄 3~20자" required>
+            </div>
+            <div class="form-group">
+                <label for="signupEmail">이메일</label>
+                <input type="email" id="signupEmail" placeholder="example@email.com" required>
             </div>
             <div class="form-group">
                 <label for="signupPassword">비밀번호</label>
@@ -281,10 +285,8 @@
             }
         }, true);
 
-        // ===== 아이디 <-> 내부 이메일 변환 (Supabase Auth는 이메일 기반) =====
-        const ID_DOMAIN = '@worldslight.local';
+        // ===== 아이디(캐릭터 이름) 형식 검사 =====
         const ID_PATTERN = /^[a-zA-Z0-9_]{3,20}$/;
-        function idToEmail(id) { return id.trim().toLowerCase() + ID_DOMAIN; }
 
         // ===== Supabase 초기화 =====
         const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co';
@@ -303,19 +305,17 @@
                 clearMessages();
                 if (!sbClient) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
 
-                const id = $('loginId').value.trim();
+                const email = $('loginEmail').value.trim();
                 const password = $('loginPassword').value;
-
-                if (!ID_PATTERN.test(id)) { showError('아이디는 영문/숫자/밑줄 3~20자여야 합니다'); return; }
 
                 $('loading').classList.add('show');
 
-                const { data, error } = await sbClient.auth.signInWithPassword({ email: idToEmail(id), password });
+                const { data, error } = await sbClient.auth.signInWithPassword({ email, password });
 
                 $('loading').classList.remove('show');
 
                 if (error) {
-                    showError('로그인 실패: 아이디 또는 비밀번호를 확인해주세요');
+                    showError('로그인 실패: ' + error.message);
                 } else if (data.user) {
                     showSuccess('로그인 성공! 게임으로 이동합니다...');
                     setTimeout(() => { window.location.href = 'game.html'; }, 1500);
@@ -326,6 +326,7 @@
                 if (!sbClient) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
 
                 const id = $('signupId').value.trim();
+                const email = $('signupEmail').value.trim();
                 const password = $('signupPassword').value;
                 const confirmPassword = $('signupPasswordConfirm').value;
 
@@ -336,7 +337,7 @@
                 $('loading').classList.add('show');
 
                 const { data, error } = await sbClient.auth.signUp({
-                    email: idToEmail(id),
+                    email,
                     password,
                     options: { data: { username: id } }
                 });
@@ -344,12 +345,13 @@
                 $('loading').classList.remove('show');
 
                 if (error) {
-                    showError(error.message.includes('already registered') ? '이미 사용 중인 아이디입니다' : '회원가입 실패: ' + error.message);
+                    showError('회원가입 실패: ' + error.message);
                 } else if (data.user) {
                     showSuccess('회원가입 성공! 로그인 페이지로 돌아갑니다...');
                     setTimeout(() => {
                         showLoginForm();
                         $('signupId').value = '';
+                        $('signupEmail').value = '';
                         $('signupPassword').value = '';
                         $('signupPasswordConfirm').value = '';
                     }, 2000);
