@@ -286,6 +286,10 @@ html, body {
     gap: 8px;
 }
 
+#userInput, #submitBtn {
+    display: none;
+}
+
 #userInput {
     flex: 1;
     background-color: rgba(0, 0, 0, 0.5);
