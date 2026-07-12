@@ -244,12 +244,7 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // ===== Supabase 초기화 =====
-        const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_dAhPMLcB0zEQW3QaSB3S_Q_PwSdj3__';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
-        // ===== DOM 요소 =====
+        // ===== DOM 요소 (Supabase 연결 여부와 무관하게 항상 먼저 준비) =====
         const loginForm = document.getElementById('loginForm');
         const signupForm = document.getElementById('signupForm');
         const toggleBtn = document.getElementById('toggleBtn');
@@ -258,11 +253,25 @@
         const successMessage = document.getElementById('successMessage');
         const loadingDiv = document.getElementById('loading');
 
-        // ===== 폼 전환 =====
+        // ===== 메시지 함수 =====
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('show');
+        }
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('show');
+        }
+        function clearMessages() {
+            errorMessage.classList.remove('show');
+            successMessage.classList.remove('show');
+        }
+
+        // ===== 폼 전환 (Supabase 연결과 무관하게 항상 동작해야 함) =====
         toggleBtn.addEventListener('click', () => {
             loginForm.style.display = loginForm.style.display === 'none' ? 'flex' : 'none';
             signupForm.style.display = signupForm.style.display === 'none' ? 'flex' : 'none';
-            
+
             if (loginForm.style.display === 'none') {
                 toggleText.textContent = '이미 계정이 있으신가요? ';
                 toggleBtn.textContent = '로그인';
@@ -272,10 +281,22 @@
             }
         });
 
+        // ===== Supabase 초기화 =====
+        const SUPABASE_URL = 'https://ptukyozancuplzwvvqma.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_dAhPMLcB0zEQW3QaSB3S_Q_PwSdj3__';
+        let supabase = null;
+        try {
+            if (!window.supabase) throw new Error('Supabase 라이브러리를 불러오지 못했습니다.');
+            supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        } catch (err) {
+            showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요. (' + err.message + ')');
+        }
+
         // ===== 로그인 =====
         loginForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMessages();
+            if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
             loadingDiv.classList.add('show');
 
             const email = document.getElementById('loginEmail').value;
@@ -302,6 +323,7 @@
         signupForm.addEventListener('submit', async (e) => {
             e.preventDefault();
             clearMessages();
+            if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
 
             const email = document.getElementById('signupEmail').value;
             const password = document.getElementById('signupPassword').value;
@@ -342,24 +364,9 @@
             }
         });
 
-        // ===== 메시지 함수 =====
-        function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.add('show');
-        }
-
-        function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.classList.add('show');
-        }
-
-        function clearMessages() {
-            errorMessage.classList.remove('show');
-            successMessage.classList.remove('show');
-        }
-
         // ===== 자동 로그인 확인 =====
         window.addEventListener('load', async () => {
+            if (!supabase) return;
             const { data: { user } } = await supabase.auth.getUser();
             if (user) {
                 window.location.href = 'game.html';
