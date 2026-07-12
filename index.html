@@ -244,40 +244,40 @@
 
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script>
-        // ===== DOM 요소 (Supabase 연결 여부와 무관하게 항상 먼저 준비) =====
-        const loginForm = document.getElementById('loginForm');
-        const signupForm = document.getElementById('signupForm');
-        const toggleBtn = document.getElementById('toggleBtn');
-        const toggleText = document.getElementById('toggleText');
-        const errorMessage = document.getElementById('errorMessage');
-        const successMessage = document.getElementById('successMessage');
-        const loadingDiv = document.getElementById('loading');
+        // ===== 헬퍼: 매번 새로 조회해서 항상 현재 DOM의 요소를 참조 =====
+        function $(id) { return document.getElementById(id); }
 
-        // ===== 메시지 함수 =====
         function showError(message) {
-            errorMessage.textContent = message;
-            errorMessage.classList.add('show');
+            $('errorMessage').textContent = message;
+            $('errorMessage').classList.add('show');
         }
         function showSuccess(message) {
-            successMessage.textContent = message;
-            successMessage.classList.add('show');
+            $('successMessage').textContent = message;
+            $('successMessage').classList.add('show');
         }
         function clearMessages() {
-            errorMessage.classList.remove('show');
-            successMessage.classList.remove('show');
+            $('errorMessage').classList.remove('show');
+            $('successMessage').classList.remove('show');
         }
 
-        // ===== 폼 전환 (Supabase 연결과 무관하게 항상 동작해야 함) =====
-        toggleBtn.addEventListener('click', () => {
-            loginForm.style.display = loginForm.style.display === 'none' ? 'flex' : 'none';
-            signupForm.style.display = signupForm.style.display === 'none' ? 'flex' : 'none';
+        function showSignupForm() {
+            $('loginForm').style.display = 'none';
+            $('signupForm').style.display = 'flex';
+            $('toggleText').textContent = '이미 계정이 있으신가요? ';
+            $('toggleBtn').textContent = '로그인';
+        }
+        function showLoginForm() {
+            $('loginForm').style.display = 'flex';
+            $('signupForm').style.display = 'none';
+            $('toggleText').textContent = '계정이 없으신가요? ';
+            $('toggleBtn').textContent = '회원가입';
+        }
 
-            if (loginForm.style.display === 'none') {
-                toggleText.textContent = '이미 계정이 있으신가요? ';
-                toggleBtn.textContent = '로그인';
-            } else {
-                toggleText.textContent = '계정이 없으신가요? ';
-                toggleBtn.textContent = '회원가입';
+        // ===== 이벤트 위임: 폼이 재생성되어도(자동완성/확장 프로그램 등) 항상 동작 =====
+        document.addEventListener('click', (e) => {
+            if (e.target && e.target.id === 'toggleBtn') {
+                const isLoginVisible = $('loginForm').style.display !== 'none';
+                if (isLoginVisible) showSignupForm(); else showLoginForm();
             }
         });
 
@@ -292,75 +292,55 @@
             showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요. (' + err.message + ')');
         }
 
-        // ===== 로그인 =====
-        loginForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearMessages();
-            if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
-            loadingDiv.classList.add('show');
+        document.addEventListener('submit', async (e) => {
+            if (e.target && e.target.id === 'loginForm') {
+                e.preventDefault();
+                clearMessages();
+                if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
+                $('loading').classList.add('show');
 
-            const email = document.getElementById('loginEmail').value;
-            const password = document.getElementById('loginPassword').value;
+                const email = $('loginEmail').value;
+                const password = $('loginPassword').value;
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email,
-                password
-            });
+                const { data, error } = await supabase.auth.signInWithPassword({ email, password });
 
-            loadingDiv.classList.remove('show');
+                $('loading').classList.remove('show');
 
-            if (error) {
-                showError('로그인 실패: ' + error.message);
-            } else if (data.user) {
-                showSuccess('로그인 성공! 게임으로 이동합니다...');
-                setTimeout(() => {
-                    window.location.href = 'game.html';
-                }, 1500);
-            }
-        });
+                if (error) {
+                    showError('로그인 실패: ' + error.message);
+                } else if (data.user) {
+                    showSuccess('로그인 성공! 게임으로 이동합니다...');
+                    setTimeout(() => { window.location.href = 'game.html'; }, 1500);
+                }
+            } else if (e.target && e.target.id === 'signupForm') {
+                e.preventDefault();
+                clearMessages();
+                if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
 
-        // ===== 회원가입 =====
-        signupForm.addEventListener('submit', async (e) => {
-            e.preventDefault();
-            clearMessages();
-            if (!supabase) { showError('서버 연결에 실패했습니다. 새로고침 후 다시 시도해주세요.'); return; }
+                const email = $('signupEmail').value;
+                const password = $('signupPassword').value;
+                const confirmPassword = $('signupPasswordConfirm').value;
 
-            const email = document.getElementById('signupEmail').value;
-            const password = document.getElementById('signupPassword').value;
-            const confirmPassword = document.getElementById('signupPasswordConfirm').value;
+                if (password !== confirmPassword) { showError('비밀번호가 일치하지 않습니다'); return; }
+                if (password.length < 8) { showError('비밀번호는 8자 이상이어야 합니다'); return; }
 
-            if (password !== confirmPassword) {
-                showError('비밀번호가 일치하지 않습니다');
-                return;
-            }
+                $('loading').classList.add('show');
 
-            if (password.length < 8) {
-                showError('비밀번호는 8자 이상이어야 합니다');
-                return;
-            }
+                const { data, error } = await supabase.auth.signUp({ email, password });
 
-            loadingDiv.classList.add('show');
+                $('loading').classList.remove('show');
 
-            const { data, error } = await supabase.auth.signUp({
-                email,
-                password
-            });
-
-            loadingDiv.classList.remove('show');
-
-            if (error) {
-                showError('회원가입 실패: ' + error.message);
-            } else if (data.user) {
-                showSuccess('회원가입 성공! 로그인 페이지로 돌아갑니다...');
-                setTimeout(() => {
-                    loginForm.style.display = 'flex';
-                    signupForm.style.display = 'none';
-                    toggleText.textContent = '계정이 없으신가요? ';
-                    toggleBtn.textContent = '회원가입';
-                    document.getElementById('signupEmail').value = '';
-                    document.getElementById('signupPassword').value = '';
-                    document.getElementById('signupPasswordConfirm').value = '';
-                }, 2000);
+                if (error) {
+                    showError('회원가입 실패: ' + error.message);
+                } else if (data.user) {
+                    showSuccess('회원가입 성공! 로그인 페이지로 돌아갑니다...');
+                    setTimeout(() => {
+                        showLoginForm();
+                        $('signupEmail').value = '';
+                        $('signupPassword').value = '';
+                        $('signupPasswordConfirm').value = '';
+                    }, 2000);
+                }
             }
         });
 
