@@ -98,7 +98,7 @@ function getWeaponTiers() { return WEAPON_TIERS_BY_CLASS[gameState.playerClass] 
 // ===== 클래스 데이터 =====
 const classData = {
     '검사': { hp: 10, mp: 4, atk: 15, crit: 10, agi: 5, lvatt: '기초 검법', hdatt: '불굴의 의지', hdattHint: 'hp 2 이하로 전투에서 살아남으면 발견됩니다' },
-    '버서커': { hp: 5, mp: 4, atk: 15, crit: 10, agi: 2, lvatt: '피의 서약', hdatt: '광폭화', hdattHint: '최대 hp를 10 이상으로 올리면 발견됩니다' },
+    '버서커': { hp: 5, mp: 4, atk: 15, crit: 10, agi: 2, lvatt: '피의 서약', hdatt: '광폭화', hdattHint: 'hp가 1 이하로 떨어진 채로 전투에서 생존하면 발견됩니다' },
     '마법사': { hp: 7.5, mp: 15, atk: 3, crit: 15, agi: 7, lvatt: '마나 회로', hdatt: '과충전', hdattHint: 'atk를 8 이상으로 올리면 발견됩니다' },
     '성직자': { hp: 9, mp: 13, atk: 4, crit: 9, agi: 6, lvatt: '신성 기도', hdatt: '심판의 성업', hdattHint: 'atk를 8 이상으로 올리면 발견됩니다' },
     '궁수': { hp: 7.5, mp: 6, atk: 10, crit: 5, agi: 15, lvatt: '약점 간파', hdatt: '정점의 역전', hdattHint: '자신보다 agi가 높은 적과 10회 이상 싸우면 발견됩니다' },
@@ -110,6 +110,52 @@ const colorToClass = {
     '빨강': '버서커', '노랑': '마법사', '연두': '성직자', '초록': '궁수',
     '파랑': '도적', '보라': '강령술사', '검정': '검사',
 };
+
+// ===== 특성 데이터 (무기 강화 단계에 연동되는 Lv형 특성 + 조건부 개화형 히든 특성) =====
+const traitData = {
+    '검사': {
+        lvStages: ['무기 강화 시마다 atk/crit/agi 10% 증가', 'atk/crit/agi 20% 증가', 'atk/crit/agi 20% 증가 + 치명타 시 적을 1턴간 기절시킴'],
+        hiddenDesc: '게임 전체에서 단 한 번, hp가 1 이하가 되는 순간 hp 5 회복 + atk 2배로 되살아납니다(전투 종료 후 효과 소멸)',
+    },
+    '버서커': {
+        lvStages: ['hp가 최대치의 50% 이하일 때 atk 10% 증가', 'hp 50% 이하일 때 atk 20% 증가', 'hp 50% 이하일 때 atk 20% 증가 + 가한 피해의 10%만큼 회복(최대hp 50%까지)'],
+        hiddenDesc: '깎인 hp 1당 atk 3%의 추가 피해(hp 3 이하부터는 4%), hp가 1 이하면 치명타 확률이 90%로 고정됩니다',
+    },
+    '마법사': {
+        lvStages: ['매 턴 최대mp 10% 회복', '매 턴 mp 10% 회복 + 직접 공격 시 mp 10% 회복', '위 효과 + 스킬 사용 시 치명타 확률 20% 증가'],
+        hiddenDesc: '일반/상급 스킬 사용 시 mp 소모 +2, 피해 2배가 되지만 사용 직후 1턴간 행동할 수 없습니다',
+    },
+    '성직자': {
+        lvStages: ['치명타 발동 시 치명타 피해의 10%만큼 추가 피해', '치명타 발동 시 20%만큼 추가 피해', '치명타 발동 시 20%만큼 추가 피해 + 자신 hp 8% 회복'],
+        hiddenDesc: '적의 숨통을 끊는 마지막 공격이 일반 공격이었을 경우, 강력한 심판의 기운이 함께합니다',
+    },
+    '궁수': {
+        lvStages: ['자신보다 agi가 낮은 적 공격 시 치명타 확률 +10', '치명타 확률 +15', '치명타 확률 +15 + 25% 확률로 25%의 피해를 한 번 더 입힘'],
+        hiddenDesc: '자신보다 agi가 높은 적을 공격할 때, 그 agi 차이만큼 치명타 확률이 상승합니다',
+    },
+    '도적': {
+        lvStages: ['전투 시작 첫 턴, 50% 확률로 atk 20% 또는 10% 증가', '50% 확률로 atk 40% 또는 20% 증가', '첫 턴 atk 40% 증가 + 회피에 성공한 다음 공격은 무조건 치명타'],
+        hiddenDesc: '전투의 첫 공격이 치명타로 적중하면, 3턴간 agi가 크게 상승합니다',
+    },
+    '강령술사': {
+        lvStages: ['일반 마법 사용 시 가한 피해의 10%만큼 회복', '일반 마법 사용 시 20%만큼 회복', '모든 마법에서 20%만큼 회복 + 적 처치 시 mp 2 회복'],
+        hiddenDesc: '적의 공격력이 자신보다 높으면, 전투가 시작될 때 그 힘의 일부를 빌려옵니다',
+    },
+};
+function getTraitStage() { return Math.max(0, Math.min(3, gameState.weaponTier - 1)); }
+function getEffectiveAtk() {
+    return gameState.atk + getWeaponTiers()[gameState.weaponTier].atkBonus + (gameState.hasHiddenWeapon ? 12 : 0);
+}
+function unlockHiddenTrait() {
+    if (gameState.hdattUnlocked) return;
+    gameState.hdattUnlocked = true;
+    addLog(`<span style="color:#ffd700;">★ 히든 특성 발견: '${gameState.hdatt}'</span>`);
+}
+function checkAtkHiddenUnlock() {
+    if (!gameState.hdattUnlocked && (gameState.playerClass === '마법사' || gameState.playerClass === '성직자') && getEffectiveAtk() >= 8) {
+        unlockHiddenTrait();
+    }
+}
 
 // ===== 스킬 데이터 =====
 const skillData = {
@@ -124,9 +170,13 @@ const skillData = {
         ultimate: { name: '혈투의 종막', mp: 5, desc: 'hp가 낮을수록 강해지는 필살기', apply(b) { const ratio = 1 - (gameState.hp / gameState.maxHp); attackEnemy(b, 1.8 + ratio * 2.5); } },
     },
     '마법사': {
-        general: { name: '마력 화살', mp: 2, desc: '원거리 마법 공격', apply(b) { attackEnemy(b, 1.5); } },
-        advanced: { name: '연쇄 벼락', mp: 3, desc: '적에게 강한 마법 피해', apply(b) { attackEnemy(b, 1.8); } },
-        ultimate: { name: '차원 붕괴', mp: 5, desc: '확정 크리티컬의 최상급 마법', apply(b) { attackEnemy(b, 2.6, { forceCrit: true }); } },
+        general: { name: '마력 화살', mp: 2, desc: '원거리 마법 공격(과충전 습득 시 위력 2배, 반동으로 다음 턴 행동불가)', apply(b) {
+            attackEnemy(b, gameState.hdattUnlocked ? 3.0 : 1.5, { viaSkill: true });
+        } },
+        advanced: { name: '연쇄 벼락', mp: 3, desc: '적에게 강한 마법 피해(과충전 습득 시 위력 2배, 반동으로 다음 턴 행동불가)', apply(b) {
+            attackEnemy(b, gameState.hdattUnlocked ? 3.6 : 1.8, { viaSkill: true });
+        } },
+        ultimate: { name: '차원 붕괴', mp: 5, desc: '확정 크리티컬의 최상급 마법', apply(b) { attackEnemy(b, 2.6, { forceCrit: true, viaSkill: true }); } },
     },
     '성직자': {
         general: { name: '치유의 빛', mp: 2, desc: '자신 hp 20% 회복', apply(b) { gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.2); updateStats(); addLog(`* 치유의 빛: hp가 회복되었습니다. (${round1(gameState.hp)}/${gameState.maxHp})`); } },
@@ -135,8 +185,17 @@ const skillData = {
     },
     '궁수': {
         general: { name: '정조준', mp: 2, desc: '다음 공격 크리티컬 확정', apply(b) { b.forceCritNext = true; addLog('* 정조준: 다음 공격은 반드시 명중합니다.'); } },
-        advanced: { name: '연사', mp: 3, desc: '2회 연속 사격', apply(b) { attackEnemy(b, 0.8); attackEnemy(b, 0.8); } },
-        ultimate: { name: '필중의 화살', mp: 5, desc: '확정 치명타의 강력한 일격', apply(b) { attackEnemy(b, 2.3, { forceCrit: true }); } },
+        advanced: { name: '급소 사격', mp: 3, desc: '공격 후, 다음 턴 시작 시 상처가 터져 추가 피해', apply(b) {
+            const dealt = attackEnemy(b, 1.3);
+            b.archerBleed = dealt * 0.5;
+            addLog('* 급소 사격: 상처가 다음 턴에 터질 것입니다.');
+        } },
+        ultimate: { name: '천공의 화살', mp: 5, desc: '강력한 일격 + 자신의 민첩만큼 고정 추가 피해', apply(b) {
+            attackEnemy(b, 2.0);
+            const bonus = Math.round(gameState.agi);
+            b.enemyHp = Math.max(0, b.enemyHp - bonus);
+            addLog(`* 민첩을 실은 화살이 ${bonus}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        } },
     },
     '도적': {
         general: { name: '그림자 베기', mp: 2, desc: '크리티컬 확률 +30%로 습격', apply(b) { attackEnemy(b, 1.3, { critBonus: 30 }); } },
@@ -144,9 +203,21 @@ const skillData = {
         ultimate: { name: '암살', mp: 5, desc: '적 hp가 낮을수록 강력한 일격', apply(b) { const ratio = b.enemyHp / b.enemyMaxHp; const mult = ratio <= 0.3 ? 4 : 2; attackEnemy(b, mult); } },
     },
     '강령술사': {
-        general: { name: '영혼 흡수', mp: 2, desc: '공격 후 피해량 20% 만큼 회복', apply(b) { const dealt = attackEnemy(b, 1.2); if (dealt) { gameState.hp = Math.min(gameState.maxHp, gameState.hp + dealt * 0.2); updateStats(); } } },
+        general: { name: '영혼 흡수', mp: 2, desc: '공격 후 피해량 일부만큼 회복(영혼 수확 단계에 따라 증가)', apply(b) {
+            const dealt = attackEnemy(b, 1.2, { viaSkill: true });
+            const pct = getTraitStage() >= 2 ? 0.2 : 0.1;
+            if (dealt) { gameState.hp = Math.min(gameState.maxHp, gameState.hp + dealt * pct); updateStats(); }
+        } },
         advanced: { name: '저주 인형', mp: 3, desc: '3턴간 적 atk 20% 감소', apply(b) { b.enemyAtkDebuff = 3; addLog('* 저주 인형: 적의 공격력이 약해집니다.'); } },
-        ultimate: { name: '사령 소환', mp: 5, desc: '소환수가 추가 공격', apply(b) { attackEnemy(b, 1.4); attackEnemy(b, 0.9); } },
+        ultimate: { name: '사령 소환', mp: 5, desc: '소환수가 추가 공격(영혼 수확 최종형이면 피해량 일부 회복 + 적 처치 시 mp 회복)', apply(b) {
+            const d1 = attackEnemy(b, 1.4, { viaSkill: true });
+            const d2 = attackEnemy(b, 0.9, { viaSkill: true });
+            if (getTraitStage() >= 3) {
+                gameState.hp = Math.min(gameState.maxHp, gameState.hp + (d1 + d2) * 0.2);
+                updateStats();
+                if (b.enemyHp <= 0) gameState.mp = Math.min(gameState.maxMp, gameState.mp + 2);
+            }
+        } },
     },
 };
 
@@ -595,23 +666,34 @@ function exploreLocation(key, loc) {
 
 // ===== 전투 시스템 =====
 function makeEnemy(loc, isBoss) {
-    if (isBoss === 'necros') return { name: '마왕 일루미스 네크로시스', hp: 40, maxHp: 40, atk: 7, isBoss: true };
-    if (isBoss === 'system') return { name: '시스템 - 개발자', hp: 45, maxHp: 45, atk: 8, isBoss: true };
-    if (isBoss === 'region') return { name: loc.boss.name, hp: loc.boss.hp, maxHp: loc.boss.hp, atk: loc.boss.atk, isBoss: true };
+    if (isBoss === 'necros') return { name: '마왕 일루미스 네크로시스', hp: 40, maxHp: 40, atk: 7, agi: 6, isBoss: true };
+    if (isBoss === 'system') return { name: '시스템 - 개발자', hp: 45, maxHp: 45, atk: 8, agi: 7, isBoss: true };
+    if (isBoss === 'region') return { name: loc.boss.name, hp: loc.boss.hp, maxHp: loc.boss.hp, atk: loc.boss.atk, agi: 9, isBoss: true };
     const names = loc.enemyNames || ['마물'];
     const name = names[Math.floor(Math.random() * names.length)];
     const hp = 12 + Math.floor(Math.random() * 10);
-    return { name, hp, maxHp: hp, atk: 3 + Math.floor(Math.random() * 4), isBoss: false };
+    return { name, hp, maxHp: hp, atk: 3 + Math.floor(Math.random() * 4), agi: 3 + Math.floor(Math.random() * 6), isBoss: false };
 }
 
 function startBattle(loc, bossType, introMsg) {
     const enemy = makeEnemy(loc, bossType);
     gameState.battle = {
-        enemyName: enemy.name, enemyHp: enemy.hp, enemyMaxHp: enemy.maxHp, enemyAtk: enemy.atk,
+        enemyName: enemy.name, enemyHp: enemy.hp, enemyMaxHp: enemy.maxHp, enemyAtk: enemy.atk, enemyAgi: enemy.agi,
         isBoss: enemy.isBoss, bossType: bossType || null, loc,
         playerCritBuff: 0, playerAtkBuff: 0, playerVulnerable: 0, playerShield: 0, playerAgiBuff: 0,
         enemyAtkDebuff: 0, forceCritNext: false, defending: false,
+        archerBleed: 0, enemyStunned: false, actionsTaken: 0, dodgedLastEnemyAttack: false,
+        indomitableActive: false, necroBorrowedAtk: 0,
     };
+    const b = gameState.battle;
+    if (gameState.playerClass === '궁수' && typeof enemy.agi === 'number' && enemy.agi > gameState.agi) {
+        gameState.archerFasterEnemyCount = (gameState.archerFasterEnemyCount || 0) + 1;
+        if (!gameState.hdattUnlocked && gameState.archerFasterEnemyCount >= 10) unlockHiddenTrait();
+    }
+    if (gameState.playerClass === '강령술사' && gameState.hdattUnlocked && enemy.atk > getEffectiveAtk()) {
+        b.necroBorrowedAtk = enemy.atk - getEffectiveAtk();
+        addLog(`* 사자의 군대: 적의 힘 일부(atk +${round1(b.necroBorrowedAtk)})를 빌려옵니다.`);
+    }
     renderBattle(enemy.isBoss ? `⚡ ${enemy.name}` : '⚔️ 전투!', introMsg);
 }
 
@@ -668,7 +750,10 @@ function showSkillMenu() {
             <div style="display:flex; flex-direction:column; gap:6px;">
                 ${['general', 'advanced', 'ultimate'].map(k => {
                     const s = skills[k];
-                    return `<div>${choiceHtml(s.name)} <span style="color:#888; font-size:11px;">(${s.mp}mp) - ${s.desc}</span></div>`;
+                    const cost = getSkillMpCost(s);
+                    return `<div class="skill-tooltip-wrap">${choiceHtml(s.name)} <span style="color:#888; font-size:11px;">(${cost}mp)</span>
+                        <div class="skill-tooltip">${s.desc}</div>
+                    </div>`;
                 }).join('')}
                 <div>${choiceHtml('취소')}</div>
             </div>
@@ -680,22 +765,47 @@ function showSkillMenu() {
     });
 }
 
+function getSkillMpCost(entry) {
+    const cls = gameState.playerClass;
+    if (cls === '마법사' && gameState.hdattUnlocked && entry !== skillData['마법사'].ultimate) return entry.mp + 2;
+    return entry.mp;
+}
+
 function useSkillByName(name) {
     const skills = skillData[gameState.playerClass];
     const entry = Object.values(skills).find(s => s.name === name);
     if (!entry) return;
-    if (gameState.mp < entry.mp) { addLog('<span style="color:#ff5252;">* mp가 부족합니다.</span>'); return; }
+    const cost = getSkillMpCost(entry);
+    if (gameState.mp < cost) { addLog('<span style="color:#ff5252;">* mp가 부족합니다.</span>'); return; }
     playerTurn(() => {
-        gameState.mp -= entry.mp;
+        gameState.mp -= cost;
         updateStats();
         entry.apply(gameState.battle);
+        if (gameState.playerClass === '마법사' && gameState.hdattUnlocked && entry !== skillData['마법사'].ultimate) {
+            gameState.stunSelfNextTurn = true;
+        }
     });
 }
 
 function playerTurn(action) {
     const b = gameState.battle;
     if (!b) return;
-    action();
+    if (gameState.playerClass === '마법사' && getTraitStage() >= 1) {
+        gameState.mp = Math.min(gameState.maxMp, gameState.mp + gameState.maxMp * 0.1);
+    }
+    if (b.archerBleed) {
+        const bleedDmg = Math.round(b.archerBleed);
+        b.enemyHp = Math.max(0, b.enemyHp - bleedDmg);
+        addLog(`* 상처가 벌어지며 ${bleedDmg}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        b.archerBleed = 0;
+        if (checkBattleEnd()) return;
+    }
+    if (gameState.stunSelfNextTurn) {
+        gameState.stunSelfNextTurn = false;
+        addLog('* 과충전의 반동으로 이번 턴은 움직일 수 없습니다.');
+    } else {
+        action();
+    }
     updateBattleDisplay();
     if (checkBattleEnd()) return;
     enemyTurn();
@@ -704,16 +814,84 @@ function playerTurn(action) {
 
 function attackEnemy(b, multiplier, opts) {
     opts = opts || {};
+    const cls = gameState.playerClass;
+    const stage = getTraitStage();
+    const isFirstAction = (b.actionsTaken || 0) === 0;
+    b.actionsTaken = (b.actionsTaken || 0) + 1;
+
     let atk = gameState.atk + (getWeaponTiers()[gameState.weaponTier].atkBonus) + (gameState.hasHiddenWeapon ? 12 : 0);
+    if (cls === '강령술사') atk += (b.necroBorrowedAtk || 0);
     if (b.playerAtkBuff > 0) atk *= 1.3;
+    if (cls === '검사' && stage >= 1) atk *= (1 + (stage >= 2 ? 0.2 : 0.1));
+    if (cls === '버서커' && stage >= 1 && gameState.hp <= gameState.maxHp * 0.5) atk *= (1 + (stage >= 2 ? 0.2 : 0.1));
+    if (b.indomitableActive) atk *= 2;
+    if (cls === '도적' && stage >= 1 && isFirstAction) {
+        const roll = Math.random() < 0.5;
+        atk *= stage >= 3 ? 1.4 : (roll ? (stage >= 2 ? 1.4 : 1.2) : (stage >= 2 ? 1.2 : 1.1));
+    }
+
+    let rageBonus = 0;
+    if (cls === '버서커' && gameState.hdattUnlocked) {
+        const hpLost = gameState.maxHp - gameState.hp;
+        rageBonus = hpLost * (gameState.hp <= 3 ? 0.04 : 0.03) * atk;
+    }
+
     let critChance = gameState.crit + (b.playerCritBuff > 0 ? 20 : 0) + (opts.critBonus || 0);
-    const isCrit = opts.forceCrit || b.forceCritNext || Math.random() * 100 < critChance;
+    if (cls === '궁수' && typeof b.enemyAgi === 'number') {
+        if (b.enemyAgi < gameState.agi && stage >= 1) critChance += (stage >= 2 ? 15 : 10);
+        if (gameState.hdattUnlocked && b.enemyAgi > gameState.agi) critChance += (b.enemyAgi - gameState.agi);
+    }
+    if (cls === '마법사' && opts.viaSkill && stage >= 3) critChance += 20;
+
+    let isCrit = opts.forceCrit || b.forceCritNext || Math.random() * 100 < critChance;
+    if (cls === '버서커' && gameState.hdattUnlocked && gameState.hp <= 1) isCrit = Math.random() * 100 < 90;
+    if (cls === '도적' && stage >= 3 && b.dodgedLastEnemyAttack) { isCrit = true; b.dodgedLastEnemyAttack = false; }
     b.forceCritNext = false;
+
     let dmg = atk * multiplier * (0.85 + Math.random() * 0.3);
     if (isCrit) dmg *= 1.6;
+    dmg += rageBonus;
     dmg = Math.max(1, Math.round(dmg));
     b.enemyHp = Math.max(0, b.enemyHp - dmg);
     addLog(`* ${isCrit ? '치명타! ' : ''}${dmg}의 데미지를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+
+    if (cls === '검사' && stage >= 3 && isCrit && b.enemyHp > 0) {
+        b.enemyStunned = true;
+        addLog(`* ${b.enemyName}이(가) 기절했습니다!`);
+    }
+    if (cls === '버서커' && stage >= 3) {
+        const healCap = gameState.maxHp * 0.5;
+        if (gameState.hp < healCap) {
+            gameState.hp = Math.min(healCap, gameState.hp + dmg * 0.1);
+            updateStats();
+        }
+    }
+    if (cls === '성직자' && stage >= 1 && isCrit && b.enemyHp > 0) {
+        const bonus = Math.max(1, Math.round(dmg * (stage >= 2 ? 0.2 : 0.1)));
+        b.enemyHp = Math.max(0, b.enemyHp - bonus);
+        addLog(`* 신성한 기운이 ${bonus}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        if (stage >= 3) {
+            gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.08);
+            updateStats();
+        }
+    }
+    if (cls === '궁수' && stage >= 3 && b.enemyHp > 0 && Math.random() < 0.25) {
+        const extra = Math.max(1, Math.round(dmg * 0.25));
+        b.enemyHp = Math.max(0, b.enemyHp - extra);
+        addLog(`* 흐르는 화살이 ${extra}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+    }
+    if (cls === '도적') {
+        if (!gameState.hdattUnlocked && isFirstAction && isCrit) {
+            gameState.rogueFirstTurnCritCount = (gameState.rogueFirstTurnCritCount || 0) + 1;
+            if (gameState.rogueFirstTurnCritCount >= 8) unlockHiddenTrait();
+        } else if (gameState.hdattUnlocked && isFirstAction && isCrit) {
+            b.playerAgiBuff = Math.max(b.playerAgiBuff, 3);
+            addLog('* 환영술: 3턴간 agi가 크게 상승합니다.');
+        }
+    }
+    if (cls === '마법사' && stage >= 2 && !opts.viaSkill) {
+        gameState.mp = Math.min(gameState.maxMp, gameState.mp + gameState.maxMp * 0.1);
+    }
     return dmg;
 }
 
@@ -734,19 +912,36 @@ function tryFlee() {
 function enemyTurn() {
     const b = gameState.battle;
     if (!b) return;
-    let agi = gameState.agi + (b.playerAgiBuff > 0 ? 50 : 0);
-    if (Math.random() * 100 < agi) {
-        addLog(`* ${b.enemyName}의 공격을 회피했습니다!`);
+    const cls = gameState.playerClass;
+    if (b.enemyStunned) {
+        b.enemyStunned = false;
+        addLog(`* ${b.enemyName}은(는) 기절해서 움직이지 못합니다.`);
     } else {
-        let enemyAtk = b.enemyAtk * (b.enemyAtkDebuff > 0 ? 0.8 : 1);
-        let dmg = enemyAtk * (0.85 + Math.random() * 0.3);
-        if (b.defending) dmg *= 0.5;
-        if (b.playerShield > 0) dmg *= 0.7;
-        if (b.playerVulnerable > 0) dmg *= 1.2;
-        dmg = Math.max(1, Math.round(dmg * 10) / 10);
-        const hpLoss = Math.round((dmg / 10) * 10) / 10;
-        gameState.hp = Math.max(0, gameState.hp - hpLoss);
-        addLog(`* ${b.enemyName}의 공격! 공격력 ${dmg}을(를) 받아 hp가 ${hpLoss}칸 깎였습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})`);
+        let agi = gameState.agi + (b.playerAgiBuff > 0 ? 50 : 0);
+        if (Math.random() * 100 < agi) {
+            addLog(`* ${b.enemyName}의 공격을 회피했습니다!`);
+            if (cls === '도적' && getTraitStage() >= 3) b.dodgedLastEnemyAttack = true;
+        } else {
+            let enemyAtk = b.enemyAtk * (b.enemyAtkDebuff > 0 ? 0.8 : 1);
+            let dmg = enemyAtk * (0.85 + Math.random() * 0.3);
+            if (b.defending) dmg *= 0.5;
+            if (b.playerShield > 0) dmg *= 0.7;
+            if (b.playerVulnerable > 0) dmg *= 1.2;
+            dmg = Math.max(1, Math.round(dmg * 10) / 10);
+            const hpLoss = Math.round((dmg / 10) * 10) / 10;
+            gameState.hp = Math.max(0, gameState.hp - hpLoss);
+            addLog(`* ${b.enemyName}의 공격! 공격력 ${dmg}을(를) 받아 hp가 ${hpLoss}칸 깎였습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})`);
+            if (gameState.hp > 0) {
+                if (cls === '검사' && !gameState.hdattUnlocked && gameState.hp <= 2) unlockHiddenTrait();
+                if (cls === '버서커' && !gameState.hdattUnlocked && gameState.hp <= 1) unlockHiddenTrait();
+                if (cls === '검사' && gameState.hdattUnlocked && !gameState.indomitableUsed && gameState.hp <= 1) {
+                    gameState.indomitableUsed = true;
+                    gameState.hp = Math.min(gameState.maxHp, gameState.hp + 5);
+                    b.indomitableActive = true;
+                    addLog('<span style="color:#ffd700;">* 불굴의 의지: hp가 회복되고 atk가 크게 오릅니다!</span>');
+                }
+            }
+        }
     }
     b.defending = false;
     if (b.playerCritBuff > 0) b.playerCritBuff--;
@@ -765,11 +960,18 @@ function checkBattleEnd() {
     if (b.enemyHp <= 0) {
         const wasBossType = b.bossType;
         const wasLoc = b.loc;
+        const wasIndomitable = b.indomitableActive;
+        if (gameState.playerClass === '강령술사' && !wasBossType) {
+            gameState.killCountByEnemy = gameState.killCountByEnemy || {};
+            const n = b.enemyName;
+            gameState.killCountByEnemy[n] = (gameState.killCountByEnemy[n] || 0) + 1;
+            if (!gameState.hdattUnlocked && gameState.killCountByEnemy[n] >= 30) unlockHiddenTrait();
+        }
         gameState.battle = null;
         if (wasBossType === 'necros') { onNecrosDefeated(); return true; }
         if (wasBossType === 'system') { onSystemBossResolved(); return true; }
-        if (wasBossType === 'region') { onRegionBossVictory(wasLoc); return true; }
-        onFieldVictory(wasLoc);
+        if (wasBossType === 'region') { onRegionBossVictory(wasLoc, wasIndomitable); return true; }
+        onFieldVictory(wasLoc, wasIndomitable);
         return true;
     }
     if (gameState.hp <= 0) {
@@ -781,8 +983,8 @@ function checkBattleEnd() {
     return false;
 }
 
-function onFieldVictory(loc) {
-    gameState.hp = gameState.maxHp; gameState.mp = gameState.maxMp;
+function onFieldVictory(loc, wasIndomitable) {
+    gameState.hp = wasIndomitable ? 1 : gameState.maxHp; gameState.mp = gameState.maxMp;
     gameState.fieldVictoryCount = (gameState.fieldVictoryCount || 0) + 1;
     const isTutorial = loc && loc.type === 'tutorial';
     let dropMsg = '';
@@ -813,8 +1015,8 @@ function onFieldVictory(loc) {
     });
 }
 
-function onRegionBossVictory(loc) {
-    gameState.hp = gameState.maxHp; gameState.mp = gameState.maxMp;
+function onRegionBossVictory(loc, wasIndomitable) {
+    gameState.hp = wasIndomitable ? 1 : gameState.maxHp; gameState.mp = gameState.maxMp;
     const key = Object.keys(locations).find(k => locations[k] === loc);
     if (key) gameState.regionBossDefeated[key] = true;
     const goldDrop = 30 + Math.floor(Math.random() * 21);
@@ -1064,6 +1266,26 @@ function updateStats() {
     document.getElementById('statAgi').textContent = gameState.agi;
     document.getElementById('statGold').textContent = gameState.gold || 0;
     document.getElementById('statMaterials').textContent = gameState.materials || 0;
+    checkAtkHiddenUnlock();
+    updateTraits();
+}
+function updateTraits() {
+    const el = document.getElementById('traitsSection');
+    if (!el || !gameState.playerClass) return;
+    const t = traitData[gameState.playerClass];
+    const stage = getTraitStage();
+    const stageNames = ['미강화', '1차 강화', '2차 강화', '최종형'];
+    el.innerHTML = `
+        <div style="margin-bottom:8px;">
+            <span style="color:#ffd700;">${gameState.lvatt}</span> <span style="color:#888; font-size:11px;">(${stageNames[stage]})</span>
+            <div style="color:#aaa; font-size:11px; margin-top:2px;">${stage > 0 ? t.lvStages[stage - 1] : '무기를 강화하면 효과가 발동됩니다'}</div>
+        </div>
+        <div>
+            ${gameState.hdattUnlocked
+                ? `<span style="color:#ff9800;">★ ${gameState.hdatt}</span><div style="color:#aaa; font-size:11px; margin-top:2px;">${t.hiddenDesc}</div>`
+                : `<span style="color:#666;">??? (미발견)</span><div style="color:#666; font-size:11px; margin-top:2px;">${classData[gameState.playerClass].hdattHint}</div>`}
+        </div>
+    `;
 }
 function updateInventory() {
     const inv = document.getElementById('inventory');
