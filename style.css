@@ -386,6 +386,18 @@ html, body {
     box-shadow: 0 0 12px rgba(255, 215, 0, 0.4);
 }
 
+#saveBtn, #loadBtn, #resetBtn {
+    background-color: #00bfff;
+    color: #fff;
+    padding: 5px 10px;
+    font-size: 11px;
+}
+
+#saveBtn:hover, #loadBtn:hover, #resetBtn:hover {
+    background-color: #0288d1;
+    box-shadow: none;
+}
+
 /* ===== 모달 ===== */
 .modal {
     display: none;
