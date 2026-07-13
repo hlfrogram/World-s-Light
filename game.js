@@ -929,7 +929,8 @@ function enemyTurn() {
             if (b.playerVulnerable > 0) dmg *= 1.2;
             dmg = Math.max(1, Math.round(dmg * 10) / 10);
             const hpLoss = Math.round((dmg / 10) * 10) / 10;
-            gameState.hp = Math.max(0, gameState.hp - hpLoss);
+            const minHp = (b.loc && b.loc.type === 'tutorial') ? 1 : 0;
+            gameState.hp = Math.max(minHp, gameState.hp - hpLoss);
             addLog(`* ${b.enemyName}의 공격! 공격력 ${dmg}을(를) 받아 hp가 ${hpLoss}칸 깎였습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})`);
             if (gameState.hp > 0) {
                 if (cls === '검사' && !gameState.hdattUnlocked && gameState.hp <= 2) unlockHiddenTrait();
