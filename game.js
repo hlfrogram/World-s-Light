@@ -193,8 +193,9 @@ const skillData = {
         ultimate: { name: '천공의 화살', mp: 5, desc: '강력한 일격 + 자신의 민첩만큼 고정 추가 피해', apply(b) {
             attackEnemy(b, 2.0);
             const bonus = Math.round(gameState.agi);
-            b.enemyHp = Math.max(0, b.enemyHp - bonus);
-            addLog(`* 민첩을 실은 화살이 ${bonus}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+            const bonusLoss = Math.round((bonus / 10) * 10) / 10;
+            b.enemyHp = Math.max(0, b.enemyHp - bonusLoss);
+            addLog(`* 민첩을 실은 화살이 공격력 ${bonus}만큼 적 hp를 ${bonusLoss}칸 깎았습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
         } },
     },
     '도적': {
@@ -231,7 +232,7 @@ const locations = {
         desc: '세계수 에너지를 정류하여 인간 마을을 지키는 거대한 바람의 장벽입니다.',
         truth: '사실 이곳은 마물이 밖으로 나가지 못하게 가두고 맹목적으로 사냥하기 위해 시스템이 쳐둔 \'가두리 양식장\'의 경계선이었다.',
         enemyNames: ['바람 정령', '청풍의 파수견', '길 잃은 그림자'],
-        boss: { name: '폭풍의 파수룡', hp: 50, atk: 10 },
+        boss: { name: '폭풍의 파수룡', hp: 18, atk: 10 },
         type: 'field',
     },
     '황혼령': {
@@ -239,7 +240,7 @@ const locations = {
         desc: '붉은 노을 아래, 인간들이 세계수 뿌리에서 나오는 에너지를 정제하는 공업 도시입니다.',
         truth: '이곳은 마물의 피와 에너지를 짜내어 인간의 무기를 제련하는 잔혹한 도살장이었다.',
         enemyNames: ['정련로의 파수꾼', '녹슨 골렘', '황혼의 감시자'],
-        boss: { name: '정련소의 감독관', hp: 55, atk: 11 },
+        boss: { name: '정련소의 감독관', hp: 20, atk: 11 },
         type: 'field',
     },
     '염화대지': {
@@ -247,7 +248,7 @@ const locations = {
         desc: '뜨거운 열기를 뿜어내는 마력 광산입니다.',
         truth: '세계수가 흡수한 마물 에너지가 가장 고농도로 농축된 곳으로, 인간들의 탐욕이 대지를 불태우고 있는 형상이었다.',
         enemyNames: ['용암 마물', '열하의 광부 인형', '불타는 정령'],
-        boss: { name: '용암의 군주', hp: 60, atk: 12 },
+        boss: { name: '용암의 군주', hp: 22, atk: 12 },
         type: 'field',
     },
     '설향원': {
@@ -264,6 +265,11 @@ const FIELD_LOCATIONS = ['청풍협', '황혼령', '염화대지'];
 
 // ===== 유틸 =====
 function round1(n) { return Math.round(n * 10) / 10; }
+function renderBar(current, max) {
+    const total = Math.max(1, Math.round(max));
+    const filled = Math.max(0, Math.min(total, Math.round(current)));
+    return '■'.repeat(filled) + '□'.repeat(total - filled);
+}
 function addLog(html) {
     const content = document.getElementById('gameContent');
     content.innerHTML += `<p class="system-message">${html}</p>`;
@@ -673,12 +679,12 @@ function exploreLocation(key, loc) {
 
 // ===== 전투 시스템 =====
 function makeEnemy(loc, isBoss) {
-    if (isBoss === 'necros') return { name: '마왕 일루미스 네크로시스', hp: 40, maxHp: 40, atk: 7, agi: 6, isBoss: true };
-    if (isBoss === 'system') return { name: '시스템 - 개발자', hp: 45, maxHp: 45, atk: 8, agi: 7, isBoss: true };
+    if (isBoss === 'necros') return { name: '마왕 일루미스 네크로시스', hp: 15, maxHp: 15, atk: 7, agi: 6, isBoss: true };
+    if (isBoss === 'system') return { name: '시스템 - 개발자', hp: 18, maxHp: 18, atk: 8, agi: 7, isBoss: true };
     if (isBoss === 'region') return { name: loc.boss.name, hp: loc.boss.hp, maxHp: loc.boss.hp, atk: loc.boss.atk, agi: 9, isBoss: true };
     const names = loc.enemyNames || ['마물'];
     const name = names[Math.floor(Math.random() * names.length)];
-    const hp = 12 + Math.floor(Math.random() * 10);
+    const hp = 3 + Math.floor(Math.random() * 4);
     return { name, hp, maxHp: hp, atk: 3 + Math.floor(Math.random() * 4), agi: 3 + Math.floor(Math.random() * 6), isBoss: false };
 }
 
@@ -713,11 +719,11 @@ function renderBattle(title, extraMsg) {
         <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             <div style="padding:15px; background-color:rgba(100,200,255,0.1); border:1px solid #00bfff; border-radius:4px;">
                 <p style="font-weight:bold; color:#00bfff;">${gameState.playerName}</p>
-                <p id="battlePlayerHp">HP: ${round1(gameState.hp)}/${gameState.maxHp} · MP: ${round1(gameState.mp)}/${gameState.maxMp}</p>
+                <p id="battlePlayerHp">HP ${renderBar(gameState.hp, gameState.maxHp)} · MP ${renderBar(gameState.mp, gameState.maxMp)}</p>
             </div>
             <div style="padding:15px; background-color:rgba(255,100,100,0.1); border:1px solid #ff5252; border-radius:4px;">
                 <p style="font-weight:bold; color:#ff5252;">${b.enemyName}</p>
-                <p id="battleEnemyHp">HP: ${round1(b.enemyHp)}/${b.enemyMaxHp}</p>
+                <p id="battleEnemyHp">HP ${renderBar(b.enemyHp, b.enemyMaxHp)}</p>
             </div>
         </div>
         <div style="margin-top:20px;">
@@ -732,8 +738,8 @@ function updateBattleDisplay() {
     if (!b) return;
     const playerBox = document.getElementById('battlePlayerHp');
     const enemyBox = document.getElementById('battleEnemyHp');
-    if (playerBox) playerBox.textContent = `HP: ${round1(gameState.hp)}/${gameState.maxHp} · MP: ${round1(gameState.mp)}/${gameState.maxMp}`;
-    if (enemyBox) enemyBox.textContent = `HP: ${round1(b.enemyHp)}/${b.enemyMaxHp}`;
+    if (playerBox) playerBox.textContent = `HP ${renderBar(gameState.hp, gameState.maxHp)} · MP ${renderBar(gameState.mp, gameState.maxMp)}`;
+    if (enemyBox) enemyBox.textContent = `HP ${renderBar(b.enemyHp, b.enemyMaxHp)}`;
 }
 
 function handleBattleCommand(cmd) {
@@ -802,8 +808,9 @@ function playerTurn(action) {
     }
     if (b.archerBleed) {
         const bleedDmg = Math.round(b.archerBleed);
-        b.enemyHp = Math.max(0, b.enemyHp - bleedDmg);
-        addLog(`* 상처가 벌어지며 ${bleedDmg}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        const bleedLoss = Math.round((bleedDmg / 10) * 10) / 10;
+        b.enemyHp = Math.max(0, b.enemyHp - bleedLoss);
+        addLog(`* 상처가 벌어지며 공격력 ${bleedDmg}만큼 적 hp가 ${bleedLoss}칸 깎였습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
         b.archerBleed = 0;
         if (checkBattleEnd()) return;
     }
@@ -859,8 +866,9 @@ function attackEnemy(b, multiplier, opts) {
     if (isCrit) dmg *= 1.6;
     dmg += rageBonus;
     dmg = Math.max(1, Math.round(dmg));
-    b.enemyHp = Math.max(0, b.enemyHp - dmg);
-    addLog(`* ${isCrit ? '치명타! ' : ''}${dmg}의 데미지를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+    const hpLoss = Math.round((dmg / 10) * 10) / 10;
+    b.enemyHp = Math.max(0, b.enemyHp - hpLoss);
+    addLog(`* ${isCrit ? '치명타! ' : ''}공격력 ${dmg}을(를) 입혀 적 hp가 ${hpLoss}칸 깎였습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
 
     if (cls === '검사' && stage >= 3 && isCrit && b.enemyHp > 0) {
         b.enemyStunned = true;
@@ -875,8 +883,9 @@ function attackEnemy(b, multiplier, opts) {
     }
     if (cls === '성직자' && stage >= 1 && isCrit && b.enemyHp > 0) {
         const bonus = Math.max(1, Math.round(dmg * (stage >= 2 ? 0.2 : 0.1)));
-        b.enemyHp = Math.max(0, b.enemyHp - bonus);
-        addLog(`* 신성한 기운이 ${bonus}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        const bonusLoss = Math.round((bonus / 10) * 10) / 10;
+        b.enemyHp = Math.max(0, b.enemyHp - bonusLoss);
+        addLog(`* 신성한 기운이 공격력 ${bonus}만큼 적 hp를 ${bonusLoss}칸 깎았습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
         if (stage >= 3) {
             gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.08);
             updateStats();
@@ -884,8 +893,9 @@ function attackEnemy(b, multiplier, opts) {
     }
     if (cls === '궁수' && stage >= 3 && b.enemyHp > 0 && Math.random() < 0.25) {
         const extra = Math.max(1, Math.round(dmg * 0.25));
-        b.enemyHp = Math.max(0, b.enemyHp - extra);
-        addLog(`* 흐르는 화살이 ${extra}의 추가 피해를 입혔습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        const extraLoss = Math.round((extra / 10) * 10) / 10;
+        b.enemyHp = Math.max(0, b.enemyHp - extraLoss);
+        addLog(`* 흐르는 화살이 공격력 ${extra}만큼 적 hp를 ${extraLoss}칸 깎았습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
     }
     if (cls === '도적') {
         if (!gameState.hdattUnlocked && isFirstAction && isCrit) {
@@ -1267,8 +1277,8 @@ function updatePlayerInfo() {
     if (gameState.playerClass) hasUnsavedProgress = true;
 }
 function updateStats() {
-    document.getElementById('statHp').textContent = round1(gameState.hp);
-    document.getElementById('statMp').textContent = round1(gameState.mp);
+    document.getElementById('statHp').textContent = renderBar(gameState.hp, gameState.maxHp);
+    document.getElementById('statMp').textContent = renderBar(gameState.mp, gameState.maxMp);
     document.getElementById('statAtk').textContent = gameState.atk + getWeaponTiers()[gameState.weaponTier].atkBonus + (gameState.hasHiddenWeapon ? 12 : 0);
     document.getElementById('statCrit').textContent = gameState.crit + '%';
     document.getElementById('statAgi').textContent = gameState.agi + '%';
