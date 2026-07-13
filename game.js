@@ -18,10 +18,13 @@ function createInitialGameState() {
         lvatt: '', hdatt: '', hdattUnlocked: false,
         weaponTier: 0, // 0=맨손, 1=녹슨 숏소드 ... 4=룬 블레이드
         inventory: [],
+        gold: 0,
+        materials: 0,
         hiddenPieces: [],
         hiddenPiecesUnlocked: false,
         hiddenWeaponAssembled: false,
         hasHiddenWeapon: false,
+        regionBossDefeated: {},
         exploreCount: {},
         truthRevealed: {},
         tutorialDone: false,
@@ -157,6 +160,7 @@ const locations = {
         desc: '세계수 에너지를 정류하여 인간 마을을 지키는 거대한 바람의 장벽입니다.',
         truth: '사실 이곳은 마물이 밖으로 나가지 못하게 가두고 맹목적으로 사냥하기 위해 시스템이 쳐둔 \'가두리 양식장\'의 경계선이었다.',
         enemyNames: ['바람 정령', '청풍의 파수견', '길 잃은 그림자'],
+        boss: { name: '폭풍의 파수룡', hp: 50, atk: 10 },
         type: 'field',
     },
     '황혼령': {
@@ -164,6 +168,7 @@ const locations = {
         desc: '붉은 노을 아래, 인간들이 세계수 뿌리에서 나오는 에너지를 정제하는 공업 도시입니다.',
         truth: '이곳은 마물의 피와 에너지를 짜내어 인간의 무기를 제련하는 잔혹한 도살장이었다.',
         enemyNames: ['정련로의 파수꾼', '녹슨 골렘', '황혼의 감시자'],
+        boss: { name: '정련소의 감독관', hp: 55, atk: 11 },
         type: 'field',
     },
     '염화대지': {
@@ -171,6 +176,7 @@ const locations = {
         desc: '뜨거운 열기를 뿜어내는 마력 광산입니다.',
         truth: '세계수가 흡수한 마물 에너지가 가장 고농도로 농축된 곳으로, 인간들의 탐욕이 대지를 불태우고 있는 형상이었다.',
         enemyNames: ['용암 마물', '열하의 광부 인형', '불타는 정령'],
+        boss: { name: '용암의 군주', hp: 60, atk: 12 },
         type: 'field',
     },
     '설향원': {
@@ -409,13 +415,12 @@ function displayTravelMenu() {
     const content = document.getElementById('gameContent');
     const rows = FIELD_LOCATIONS.map(key => `<div style="padding:10px; background-color:rgba(0,191,255,0.1); border-left:3px solid #00bfff; border-radius:4px;">${choiceHtml(key)} - ${locations[key].name}</div>`).join('');
     const lockedRow = `<div style="padding:10px; background-color:rgba(100,100,100,0.1); border-left:3px solid #555; border-radius:4px; color:#666;">🔒 설향원 (개발중)</div>`;
-    const forgeUnlocked = gameState.hiddenPieces.length >= 3 && !gameState.hiddenWeaponAssembled;
     content.innerHTML = `
         <div class="location-title">${locations['세계수의 심장'].name}</div>
         <div class="location-desc">${locations['세계수의 심장'].desc}</div>
         <p class="system-message">* 시스템: '어디로 가시겠습니까?'</p>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">${rows}${lockedRow}</div>
-        ${forgeUnlocked ? `<div style="margin-top:15px;">${choiceHtml('대장간')}</div>` : ''}
+        <div style="margin-top:15px;">${choiceHtml('대장간')} ${choiceHtml('상점')}</div>
         ${readyForBoss() ? `<div style="margin-top:15px;">${choiceHtml('사월정으로 이동')}</div>` : ''}
         ${readyForFinal() ? `<div style="margin-top:15px;">${choiceHtml('종천각으로 이동')}</div>` : ''}
         <p style="margin-top:15px; color:#666; font-size:12px;">('0' 입력 시 여명각으로 이동)</p>
@@ -423,7 +428,8 @@ function displayTravelMenu() {
     setInput('지역명을 입력하세요...', (val) => {
         if (checkEasterEgg(val)) return;
         if (val === '0') { travelToDawnpoint(); return; }
-        if (val === '대장간' && forgeUnlocked) { displayForge(); return; }
+        if (val === '대장간') { displayForge(); return; }
+        if (val === '상점') { displayShop(); return; }
         if (val === '사월정으로 이동' && readyForBoss()) { displayBossEncounter(); return; }
         if (val === '종천각으로 이동' && readyForFinal()) { goToFinalBattle(); return; }
         if (locations[val] && locations[val].type === 'field') { gameState.currentLocation = val; displayLocation(); }
@@ -460,19 +466,76 @@ function travelToDawnpoint() {
 }
 
 function displayForge() {
+    const tiers = getWeaponTiers();
+    const canUpgradeWeapon = gameState.weaponTier < tiers.length - 1;
+    const upgradeCost = 3;
+    const forgeUnlocked = gameState.hiddenPieces.length >= 3 && !gameState.hiddenWeaponAssembled;
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2>🔨 대장간</h2>
-        <p class="system-message">* 대장장이: '히든 피스 3개를 모두 가져왔군요. 조립해 드릴까요?'</p>
-        <div style="margin-top:15px;">${choiceHtml('조립')} ${choiceHtml('돌아가기')}</div>
+        <p class="system-message">* 대장장이: '재료를 가져오면 무기를 강화해 드리죠.' (보유 재료: ${gameState.materials || 0})</p>
+        <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
+            ${canUpgradeWeapon
+                ? `<div>${choiceHtml('무기 강화')} <span style="color:#888; font-size:11px;">(재료 ${upgradeCost}개 · 다음 단계: '${tiers[gameState.weaponTier + 1].name}')</span></div>`
+                : `<p style="color:#888; font-size:11px;">현재 무기가 이미 최고 단계입니다.</p>`}
+            ${forgeUnlocked ? `<div>${choiceHtml('조립')} <span style="color:#888; font-size:11px;">(히든 피스 3개 조립)</span></div>` : ''}
+            <div>${choiceHtml('돌아가기')}</div>
+        </div>
     `;
     setInput('명령어를 입력하세요...', (val) => {
-        if (val === '조립') {
+        if (val === '무기 강화' && canUpgradeWeapon) {
+            if ((gameState.materials || 0) < upgradeCost) {
+                addLog('<span style="color:#ff5252;">* 대장장이: "재료가 부족합니다."</span>');
+                return;
+            }
+            gameState.materials -= upgradeCost;
+            gameState.weaponTier++;
+            updateStats(); updateInventory();
+            addLog(`* 대장장이: "다 됐습니다. '${tiers[gameState.weaponTier].name}'을(를) 손에 넣으셨군요."`);
+        } else if (val === '조립' && forgeUnlocked) {
             gameState.hiddenWeaponAssembled = true;
             addLog('* 대장장이: "조립이 끝났습니다. 여명각의 제단에 가져가 보세요."');
             updateInventory();
         } else if (val === '돌아가기') { displayTravelMenu(); }
     });
+}
+
+function displayShop(msg) {
+    const content = document.getElementById('gameContent');
+    content.innerHTML = `
+        <h2>🏪 상점</h2>
+        <p class="system-message">* 상인: '어서오세요. 무엇을 드릴까요?' (보유 골드: ${gameState.gold || 0})</p>
+        ${msg ? `<p style="margin-top:10px;">${msg}</p>` : ''}
+        <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
+            <div>${choiceHtml('hp 포션 구매')} <span style="color:#888; font-size:11px;">(30골드, hp 최대치의 40% 회복)</span></div>
+            <div>${choiceHtml('mp 포션 구매')} <span style="color:#888; font-size:11px;">(20골드, mp 최대치의 50% 회복)</span></div>
+            <div>${choiceHtml('돌아가기')}</div>
+        </div>
+    `;
+    setInput('명령어를 입력하세요...', (val) => {
+        if (val === 'hp 포션 구매') buyPotion('hp');
+        else if (val === 'mp 포션 구매') buyPotion('mp');
+        else if (val === '돌아가기') displayTravelMenu();
+    });
+}
+
+function buyPotion(type) {
+    const cost = type === 'hp' ? 30 : 20;
+    let msg;
+    if ((gameState.gold || 0) < cost) {
+        msg = '<span style="color:#ff5252;">골드가 부족합니다.</span>';
+    } else {
+        gameState.gold -= cost;
+        if (type === 'hp') {
+            gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.4);
+            msg = `<span style="color:#4caf50;">hp 포션을 사용했습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})</span>`;
+        } else {
+            gameState.mp = Math.min(gameState.maxMp, gameState.mp + gameState.maxMp * 0.5);
+            msg = `<span style="color:#4caf50;">mp 포션을 사용했습니다. (mp: ${round1(gameState.mp)}/${gameState.maxMp})</span>`;
+        }
+    }
+    updateStats();
+    displayShop(msg);
 }
 
 function displayLocation() {
@@ -484,17 +547,21 @@ function displayLocation() {
     const content = document.getElementById('gameContent');
     const truthBlock = gameState.truthRevealed[key]
         ? `<p style="margin-top:10px; color:#ff9800; font-style:italic;">숨겨진 진실: ${loc.truth}</p>` : '';
+    const bossAvailable = loc.boss && gameState.exploreCount[key] >= 2 && !gameState.regionBossDefeated[key];
     content.innerHTML = `
         <div class="location-title">${loc.name}</div>
         <div class="location-desc">${loc.desc}</div>
         ${truthBlock}
         <p class="system-message">* 시스템: ${loc.name}에 도착했습니다.</p>
-        <div style="margin-top:20px;">${choiceHtml('적과 전투')} ${choiceHtml('탐색')} ${choiceHtml('돌아가기')}</div>
+        <div style="margin-top:20px;">${choiceHtml('적과 전투')} ${choiceHtml('탐색')} ${bossAvailable ? choiceHtml('지역보스와 전투') : ''} ${choiceHtml('돌아가기')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => {
         if (checkEasterEgg(val)) return;
         if (val === '적과 전투') startBattle(loc);
         else if (val === '탐색') exploreLocation(key, loc);
+        else if (val === '지역보스와 전투' && bossAvailable) {
+            startBattle(loc, 'region', `* 시스템: '${loc.boss.name}'이(가) 모습을 드러냅니다!`);
+        }
         else if (val === '돌아가기') displayTravelMenu();
     });
 }
@@ -530,6 +597,7 @@ function exploreLocation(key, loc) {
 function makeEnemy(loc, isBoss) {
     if (isBoss === 'necros') return { name: '마왕 일루미스 네크로시스', hp: 40, maxHp: 40, atk: 7, isBoss: true };
     if (isBoss === 'system') return { name: '시스템 - 개발자', hp: 45, maxHp: 45, atk: 8, isBoss: true };
+    if (isBoss === 'region') return { name: loc.boss.name, hp: loc.boss.hp, maxHp: loc.boss.hp, atk: loc.boss.atk, isBoss: true };
     const names = loc.enemyNames || ['마물'];
     const name = names[Math.floor(Math.random() * names.length)];
     const hp = 12 + Math.floor(Math.random() * 10);
@@ -676,8 +744,9 @@ function enemyTurn() {
         if (b.playerShield > 0) dmg *= 0.7;
         if (b.playerVulnerable > 0) dmg *= 1.2;
         dmg = Math.max(1, Math.round(dmg * 10) / 10);
-        gameState.hp = Math.max(0, gameState.hp - dmg);
-        addLog(`* ${b.enemyName}의 공격! ${round1(dmg)}의 피해를 입었습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})`);
+        const hpLoss = Math.round((dmg / 10) * 10) / 10;
+        gameState.hp = Math.max(0, gameState.hp - hpLoss);
+        addLog(`* ${b.enemyName}의 공격! 공격력 ${dmg}을(를) 받아 hp가 ${hpLoss}칸 깎였습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})`);
     }
     b.defending = false;
     if (b.playerCritBuff > 0) b.playerCritBuff--;
@@ -699,6 +768,7 @@ function checkBattleEnd() {
         gameState.battle = null;
         if (wasBossType === 'necros') { onNecrosDefeated(); return true; }
         if (wasBossType === 'system') { onSystemBossResolved(); return true; }
+        if (wasBossType === 'region') { onRegionBossVictory(wasLoc); return true; }
         onFieldVictory(wasLoc);
         return true;
     }
@@ -714,20 +784,25 @@ function checkBattleEnd() {
 function onFieldVictory(loc) {
     gameState.hp = gameState.maxHp; gameState.mp = gameState.maxMp;
     gameState.fieldVictoryCount = (gameState.fieldVictoryCount || 0) + 1;
-    let weaponUpgradeMsg = '';
-    const tiers = getWeaponTiers();
-    if (gameState.fieldVictoryCount % 3 === 0 && gameState.weaponTier < tiers.length - 1) {
-        gameState.weaponTier++;
-        weaponUpgradeMsg = `<p style="margin-top:10px; color:#ffd700;">★ 전리품으로 '${tiers[gameState.weaponTier].name}'을(를) 손에 넣었습니다!</p>`;
+    const isTutorial = loc && loc.type === 'tutorial';
+    let dropMsg = '';
+    if (!isTutorial) {
+        const goldDrop = 5 + Math.floor(Math.random() * 11);
+        gameState.gold = (gameState.gold || 0) + goldDrop;
+        let dropText = `골드 ${goldDrop}`;
+        if (Math.random() < 0.4) {
+            gameState.materials = (gameState.materials || 0) + 1;
+            dropText += ', 재료 1개';
+        }
+        dropMsg = `<p style="margin-top:10px; color:#aaa;">전리품: ${dropText}</p>`;
     }
     updateStats();
     updateInventory();
-    const isTutorial = loc && loc.type === 'tutorial';
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2 style="color:#4caf50;">⚔️ 전투 승리!</h2>
         <p class="system-message">* 시스템: 마물을 격퇴했습니다! hp와 mp가 모두 회복되었습니다.</p>
-        ${weaponUpgradeMsg}
+        ${dropMsg}
         ${isTutorial ? '<p style="margin-top:10px; color:#aaa;">몸에 힘이 풀리며, 잠시 정신을 잃습니다...</p><p class="system-message" style="margin-top:10px;">* 시스템: \'세이브는 세계수의 심장에서만 가능합니다.\'</p>' : ''}
         <div style="margin-top:20px;">${choiceHtml('계속')}</div>
     `;
@@ -736,6 +811,25 @@ function onFieldVictory(loc) {
         if (isTutorial) { gameState.tutorialDone = true; displayTravelMenu(); }
         else displayLocation();
     });
+}
+
+function onRegionBossVictory(loc) {
+    gameState.hp = gameState.maxHp; gameState.mp = gameState.maxMp;
+    const key = Object.keys(locations).find(k => locations[k] === loc);
+    if (key) gameState.regionBossDefeated[key] = true;
+    const goldDrop = 30 + Math.floor(Math.random() * 21);
+    gameState.gold = (gameState.gold || 0) + goldDrop;
+    gameState.materials = (gameState.materials || 0) + 3;
+    updateStats();
+    updateInventory();
+    const content = document.getElementById('gameContent');
+    content.innerHTML = `
+        <h2 style="color:#ffd700;">★ 지역보스 격퇴!</h2>
+        <p class="system-message">* 시스템: '${loc.boss.name}'을(를) 물리쳤습니다!</p>
+        <p style="margin-top:10px; color:#ffd700;">전리품: 골드 ${goldDrop}, 재료 3개</p>
+        <div style="margin-top:20px;">${choiceHtml('계속')}</div>
+    `;
+    setInput('명령어를 입력하세요...', (val) => { if (val === '계속') displayLocation(); });
 }
 
 function showGameOver(title, msg, retryFn) {
@@ -968,6 +1062,8 @@ function updateStats() {
     document.getElementById('statAtk').textContent = gameState.atk + getWeaponTiers()[gameState.weaponTier].atkBonus + (gameState.hasHiddenWeapon ? 12 : 0);
     document.getElementById('statCrit').textContent = gameState.crit;
     document.getElementById('statAgi').textContent = gameState.agi;
+    document.getElementById('statGold').textContent = gameState.gold || 0;
+    document.getElementById('statMaterials').textContent = gameState.materials || 0;
 }
 function updateInventory() {
     const inv = document.getElementById('inventory');
