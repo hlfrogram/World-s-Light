@@ -359,6 +359,7 @@ function displayStage1Start() {
         <div class="location-desc">${locations[loc].desc}</div>
         <p class="system-message">* 시스템: ${loc}에 도착했습니다.</p>
         <p style="margin-top:15px; color:#aaa;">마을 사람들의 도움으로 여기까지 왔습니다. 이제 모험을 시작해야 합니다.</p>
+        <p class="system-message" style="margin-top:10px;">* 시스템: '세이브는 세계수의 심장에서만 가능합니다.'</p>
         <div style="margin-top:20px;">${choiceHtml('모험 시작')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => {
@@ -727,7 +728,7 @@ function onFieldVictory(loc) {
         <h2 style="color:#4caf50;">⚔️ 전투 승리!</h2>
         <p class="system-message">* 시스템: 마물을 격퇴했습니다! hp와 mp가 모두 회복되었습니다.</p>
         ${weaponUpgradeMsg}
-        ${isTutorial ? '<p style="margin-top:10px; color:#aaa;">몸에 힘이 풀리며, 잠시 정신을 잃습니다...</p>' : ''}
+        ${isTutorial ? '<p style="margin-top:10px; color:#aaa;">몸에 힘이 풀리며, 잠시 정신을 잃습니다...</p><p class="system-message" style="margin-top:10px;">* 시스템: \'세이브는 세계수의 심장에서만 가능합니다.\'</p>' : ''}
         <div style="margin-top:20px;">${choiceHtml('계속')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => {
@@ -986,6 +987,10 @@ function updateInventory() {
 
 // ===== 저장 & 로드 =====
 async function handleSave() {
+    if (gameState.currentLocation !== '세계수의 심장') {
+        alert('세계수의 심장에서만 저장할 수 있습니다.');
+        return;
+    }
     const { error } = await sbClient.from('game_saves').upsert({
         user_id: gameState.userId, game_data: JSON.stringify(gameState), updated_at: new Date(),
     }, { onConflict: 'user_id' });
