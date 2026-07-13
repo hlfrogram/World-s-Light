@@ -328,7 +328,7 @@ function checkEasterEgg(cmd) {
 function displayIntro() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <h2 style="text-align:center; font-size:28px; color:#ff9800; text-shadow:0 0 10px rgba(255,152,0,0.3);">빛의 세계</h2>
+        <h2 style="text-align:center; font-size:28px; color:#ff9800; text-shadow:0 0 10px rgba(255,152,0,0.3);">세계의 빛</h2>
         <p style="text-align:center; margin-top:30px; font-style:italic; color:#aaa;">환상의 세계로 당신을 초대합니다...</p>
         <div class="system-message" style="margin-top:30px;">* 시스템: '어서오세요, ${gameState.playerName}님'</div>
         <div style="margin-top:20px; text-align:center;">
@@ -338,7 +338,7 @@ function displayIntro() {
     updatePlayerInfo();
     setInput('명령어를 입력하세요...', (val) => {
         if (checkEasterEgg(val)) return;
-        displayCharacterCreation();
+        setTimeout(displayCharacterCreation, 500);
     });
 }
 
@@ -368,6 +368,7 @@ function displayCharacterCreation() {
             gameState.mp = stats.mp; gameState.maxMp = stats.mp;
             gameState.atk = stats.atk; gameState.crit = stats.crit; gameState.agi = stats.agi;
             gameState.lvatt = stats.lvatt; gameState.hdatt = '발견되지 않음';
+            document.getElementById('inventorySection').style.display = 'block';
             updatePlayerInfo(); updateStats(); updateInventory();
             displayStorySkip();
         } else {
@@ -379,32 +380,36 @@ function displayCharacterCreation() {
 function displayStorySkip() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <h2>스토리 스킵</h2>
-        <div class="system-message">* 시스템: '스토리를 스킵하시겠습니까?' (Y/N)</div>
+        <h2>스토리</h2>
+        <div class="system-message">* 시스템: '스토리를 보시겠습니까?' (Y/N)</div>
         <div style="margin-top:15px;">${choiceHtml('Y')} ${choiceHtml('N')}</div>
     `;
     setInput('Y 또는 N을 입력하세요', (val) => {
         const a = val.toUpperCase();
-        if (a === 'Y') { gameState.storySkipped = true; displayTutorialChoice(); }
-        else if (a === 'N') { gameState.storySkipped = false; displayFullStory(); }
+        if (a === 'Y') { gameState.storySkipped = false; displayFullStory(); }
+        else if (a === 'N') {
+            gameState.storySkipped = true;
+            addLog("* 시스템: '스토리를 스킵합니다'");
+            setTimeout(displayTutorialChoice, 600);
+        }
     });
 }
 
 function displayFullStory() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <h2>빛의 세계 - 이야기</h2>
+        <h2>세계의 빛 - 이야기</h2>
         <div class="story-text">
-            <p>빛의 세계에 오신 여러분을 환영합니다!</p>
-            <p>이 세계에는 인간과 마족, 두 종족이 있습니다.</p>
-            <p>이종족 간의 갈등으로 전쟁이 벌어졌고,</p>
-            <p>인간이 성스러운 힘을 발하는 '세계수'를 발견한 후</p>
-            <p>세계수 주변 '축복받은 땅'에서 마족을 몰아내어</p>
-            <p>결국 긴 전쟁이 멈출 수 있었습니다.</p><br>
+            <p>세계의 빛에 오신 여러분을 환영합니다.</p>
+            <p>이 세계의 인간과 마족, 두 종족은 오랜 기간 전쟁을 벌였습니다.</p>
+            <p>그러나, 인간이 마족의 힘을 무력화하는 '세계수'를 발견한 후</p>
+            <p>인간이 마족의 침입을 막아내어, 전쟁은 멈추게 되었습니다.</p><br>
             <p>그러나 이제, 세계수의 힘이 흔들리고 있습니다.</p>
-            <p>세계수가 힘을 다하기 전, 전쟁을 끝내야 합니다.</p>
+            <p>세계수의 힘이 약화된다면 다시 전쟁이 시작될 것입니다.</p>
+            <p>그래서 당신은, 마왕성에 들어가</p>
+            <p>그들의 힘의 근원을 가지고 있는 마왕을 처치하게 됩니다.</p>
             <p style="font-weight:bold; color:#ffeb3b; margin-top:20px;">
-                여러분의 목표는 마왕, '일루미스 네크로시스'의 처치입니다.
+                마왕을 격퇴하고, 인간의 평화를 지켜주세요!
             </p>
         </div>
         <div style="margin-top:30px; text-align:center;">
@@ -1233,7 +1238,7 @@ function displayEndingGood() {
             <p style="margin-top:20px; color:#ffb6c1; font-style:italic;">"당신이 날 도와주셔서 감사합니다."</p>
             <p style="margin-top:20px; color:#2196f3;">* 시스템: '이 검을 얻으셨다니... 정말 이 게임을 끝까지 깨주셨네요.'</p>
             <p style="margin-top:5px; color:#2196f3;">* 시스템: '플레이해주셔서 감사합니다.'</p>
-            <p style="margin-top:30px; text-align:center; color:#ffeb3b; font-size:18px;">★ 4차 - 루미와 빛의 세계 해방 · 게임 클리어 ★</p>
+            <p style="margin-top:30px; text-align:center; color:#ffeb3b; font-size:18px;">★ 4차 - 루미와 세계의 빛 해방 · 게임 클리어 ★</p>
         </div>
         <div style="margin-top:30px; text-align:center;"><button class="cmd-btn" onclick="restartGame()">다시 시작</button></div>
     `;
@@ -1265,8 +1270,8 @@ function updateStats() {
     document.getElementById('statHp').textContent = round1(gameState.hp);
     document.getElementById('statMp').textContent = round1(gameState.mp);
     document.getElementById('statAtk').textContent = gameState.atk + getWeaponTiers()[gameState.weaponTier].atkBonus + (gameState.hasHiddenWeapon ? 12 : 0);
-    document.getElementById('statCrit').textContent = gameState.crit;
-    document.getElementById('statAgi').textContent = gameState.agi;
+    document.getElementById('statCrit').textContent = gameState.crit + '%';
+    document.getElementById('statAgi').textContent = gameState.agi + '%';
     document.getElementById('statGold').textContent = gameState.gold || 0;
     document.getElementById('statMaterials').textContent = gameState.materials || 0;
     checkAtkHiddenUnlock();
@@ -1324,6 +1329,7 @@ async function handleLoad() {
     if (!error && data) {
         Object.assign(gameState, JSON.parse(data.game_data));
         gameState.battle = null;
+        document.getElementById('inventorySection').style.display = 'block';
         updatePlayerInfo(); updateStats(); updateInventory();
         displayTravelMenu();
         hasUnsavedProgress = false;
@@ -1346,6 +1352,7 @@ async function handleReset() {
 
     document.getElementById('inventory').innerHTML = '';
     document.getElementById('hiddenPieces').innerHTML = '';
+    document.getElementById('inventorySection').style.display = 'none';
     updatePlayerInfo();
     updateStats();
     updateInventory();
