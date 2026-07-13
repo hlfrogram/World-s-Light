@@ -351,22 +351,54 @@ function displayTutorialChoice() {
 
 // ===== 1차: 마왕 격퇴 =====
 function displayStage1Start() {
-    const loc = gameState.tutorialDone ? '백야촌' : '여명각';
+    if (!gameState.tutorialDone) { displayTutorialWake(); return; }
+    const loc = '백야촌';
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <div class="location-title">${locations[loc].name}</div>
         <div class="location-desc">${locations[loc].desc}</div>
         <p class="system-message">* 시스템: ${loc}에 도착했습니다.</p>
-        <p style="margin-top:15px; color:#aaa;">
-            ${gameState.tutorialDone
-                ? '마을 사람들의 도움으로 여기까지 왔습니다. 이제 모험을 시작해야 합니다.'
-                : '이곳은 모험가들을 위한 기초 훈련장입니다. 간단한 몬스터를 상대하며 전투 시스템을 배워봅시다.'}
-        </p>
+        <p style="margin-top:15px; color:#aaa;">마을 사람들의 도움으로 여기까지 왔습니다. 이제 모험을 시작해야 합니다.</p>
         <div style="margin-top:20px;">${choiceHtml('모험 시작')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => {
         if (checkEasterEgg(val)) return;
         if (val === '모험 시작' || val === '전투 시작') displayTravelMenu();
+    });
+}
+
+// ===== 튜토리얼 (여명각) =====
+function displayTutorialWake() {
+    const content = document.getElementById('gameContent');
+    content.innerHTML = `
+        <div class="location-title">${locations['여명각'].name}</div>
+        <p class="story-text" style="margin-top:15px;">풀숲에서 눈을 뜨자, 마물 한 마리가 저만치서 이쪽을 노려보고 있습니다.</p>
+        <p class="system-message" style="margin-top:10px;">* 시스템: '먼저, 주변을 탐색해 주세요.'</p>
+        <div style="margin-top:20px;">${choiceHtml('탐색')}</div>
+    `;
+    setInput('명령어를 입력하세요... (탐색)', (val) => {
+        if (checkEasterEgg(val)) return;
+        if (val === '탐색') displayTutorialWeaponFound();
+    });
+}
+
+function displayTutorialWeaponFound() {
+    gameState.weaponTier = Math.max(gameState.weaponTier, 1);
+    updateStats();
+    updateInventory();
+    const weapon = getWeaponTiers()[1];
+    const content = document.getElementById('gameContent');
+    content.innerHTML = `
+        <div class="location-title">${locations['여명각'].name}</div>
+        <p class="story-text" style="margin-top:15px;">수풀 사이에서 낡은 무기 하나를 발견했습니다.</p>
+        <p style="margin-top:10px; color:#ffd700;">★ '${weapon.name}'을(를) 손에 넣었습니다!</p>
+        <div style="margin-top:20px;">${choiceHtml('전투 시작')}</div>
+    `;
+    setInput('명령어를 입력하세요...', (val) => {
+        if (checkEasterEgg(val)) return;
+        if (val === '전투 시작') {
+            startBattle(locations['여명각'], null, "* 시스템: '공격은 피해를 주고, 스킬은 mp를 소모해 강력한 효과를, 방어는 받는 피해를 줄입니다.'");
+        }
     });
 }
 
@@ -503,7 +535,7 @@ function makeEnemy(loc, isBoss) {
     return { name, hp, maxHp: hp, atk: 3 + Math.floor(Math.random() * 4), isBoss: false };
 }
 
-function startBattle(loc, bossType) {
+function startBattle(loc, bossType, introMsg) {
     const enemy = makeEnemy(loc, bossType);
     gameState.battle = {
         enemyName: enemy.name, enemyHp: enemy.hp, enemyMaxHp: enemy.maxHp, enemyAtk: enemy.atk,
@@ -511,7 +543,7 @@ function startBattle(loc, bossType) {
         playerCritBuff: 0, playerAtkBuff: 0, playerVulnerable: 0, playerShield: 0, playerAgiBuff: 0,
         enemyAtkDebuff: 0, forceCritNext: false, defending: false,
     };
-    renderBattle(enemy.isBoss ? `⚡ ${enemy.name}` : '⚔️ 전투!');
+    renderBattle(enemy.isBoss ? `⚡ ${enemy.name}` : '⚔️ 전투!', introMsg);
 }
 
 function renderBattle(title, extraMsg) {
@@ -662,10 +694,11 @@ function checkBattleEnd() {
     if (!b) return true;
     if (b.enemyHp <= 0) {
         const wasBossType = b.bossType;
+        const wasLoc = b.loc;
         gameState.battle = null;
         if (wasBossType === 'necros') { onNecrosDefeated(); return true; }
         if (wasBossType === 'system') { onSystemBossResolved(); return true; }
-        onFieldVictory();
+        onFieldVictory(wasLoc);
         return true;
     }
     if (gameState.hp <= 0) {
@@ -677,7 +710,7 @@ function checkBattleEnd() {
     return false;
 }
 
-function onFieldVictory() {
+function onFieldVictory(loc) {
     gameState.hp = gameState.maxHp; gameState.mp = gameState.maxMp;
     gameState.fieldVictoryCount = (gameState.fieldVictoryCount || 0) + 1;
     let weaponUpgradeMsg = '';
@@ -688,14 +721,20 @@ function onFieldVictory() {
     }
     updateStats();
     updateInventory();
+    const isTutorial = loc && loc.type === 'tutorial';
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2 style="color:#4caf50;">⚔️ 전투 승리!</h2>
         <p class="system-message">* 시스템: 마물을 격퇴했습니다! hp와 mp가 모두 회복되었습니다.</p>
         ${weaponUpgradeMsg}
+        ${isTutorial ? '<p style="margin-top:10px; color:#aaa;">몸에 힘이 풀리며, 잠시 정신을 잃습니다...</p>' : ''}
         <div style="margin-top:20px;">${choiceHtml('계속')}</div>
     `;
-    setInput('명령어를 입력하세요...', (val) => { if (val === '계속') displayLocation(); });
+    setInput('명령어를 입력하세요...', (val) => {
+        if (val !== '계속') return;
+        if (isTutorial) { gameState.tutorialDone = true; displayTravelMenu(); }
+        else displayLocation();
+    });
 }
 
 function showGameOver(title, msg, retryFn) {
