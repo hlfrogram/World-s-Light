@@ -328,10 +328,12 @@ function checkEasterEgg(cmd) {
 function displayIntro() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <h2 style="text-align:center; font-size:28px; color:#ffd700; text-shadow:0 0 10px rgba(255,215,0,0.3);">빛의 세계</h2>
+        <h2 style="text-align:center; font-size:28px; color:#ff9800; text-shadow:0 0 10px rgba(255,152,0,0.3);">빛의 세계</h2>
         <p style="text-align:center; margin-top:30px; font-style:italic; color:#aaa;">환상의 세계로 당신을 초대합니다...</p>
         <div class="system-message" style="margin-top:30px;">* 시스템: '어서오세요, ${gameState.playerName}님'</div>
-        <div style="margin-top:20px;">${choiceHtml('시작')}</div>
+        <div style="margin-top:20px; text-align:center;">
+            <button onclick="runChoice('시작')" class="btn-start-black">시작</button>
+        </div>
     `;
     updatePlayerInfo();
     setInput('명령어를 입력하세요...', (val) => {
