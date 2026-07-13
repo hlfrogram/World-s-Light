@@ -149,7 +149,7 @@ function getEffectiveAtk() {
 function unlockHiddenTrait() {
     if (gameState.hdattUnlocked) return;
     gameState.hdattUnlocked = true;
-    addLog(`<span style="color:#ffd700;">★ 히든 특성 발견: '${gameState.hdatt}'</span>`);
+    addLog(`<span style="color:#2196f3;">★ 히든 특성 발견: '${gameState.hdatt}'</span>`);
 }
 function checkAtkHiddenUnlock() {
     if (!gameState.hdattUnlocked && (gameState.playerClass === '마법사' || gameState.playerClass === '성직자') && getEffectiveAtk() >= 8) {
@@ -345,20 +345,20 @@ function displayIntro() {
 function displayCharacterCreation() {
     const content = document.getElementById('gameContent');
     const colorBoxes = [
-        ['빨강', '#dc143c', '버서커'], ['노랑', '#ffeb3b', '마법사'], ['연두', '#00e676', '성직자'],
-        ['초록', '#00c853', '궁수'], ['파랑', '#2196f3', '도적'], ['보라', '#9c27b0', '강령술사'], ['검정', '#888', '검사'],
+        ['검정', '#888', '검사'], ['빨강', '#dc143c', '버서커'], ['노랑', '#ffeb3b', '마법사'], ['연두', '#00e676', '성직자'],
+        ['초록', '#00c853', '궁수'], ['파랑', '#2196f3', '도적'], ['보라', '#9c27b0', '강령술사'],
     ];
     content.innerHTML = `
-        <h2>캐릭터 색상 선택</h2>
-        <p class="system-message">* 시스템: '캐릭터의 색을 정해주세요(정확히 적어주세요)'</p>
+        <h2>클래스 선택</h2>
+        <p class="system-message">* 시스템: '캐릭터의 클래스를 정해주세요.'</p>
         <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:10px; margin:20px 0;">
             ${colorBoxes.map(([c, hex, cls]) => `
-                <div class="choice-text" onclick="runChoice('${c}')" style="padding:10px; background-color:${hex}22; border:1px solid ${hex}; border-radius:4px; text-decoration:none;">
-                    <span style="color:${hex};">● ${c}</span> → ${cls}
+                <div class="choice-text" onclick="runChoice('${c}')" style="padding:10px; background-color:${hex}22; border:1px solid ${hex}; border-radius:4px; text-decoration:none; text-align:center;">
+                    <span style="color:${hex}; font-weight:bold;">${cls}</span>
                 </div>`).join('')}
         </div>
     `;
-    setInput('색상을 입력하세요...', (val) => {
+    setInput('클래스를 선택하세요...', (val) => {
         if (checkEasterEgg(val)) return;
         if (colorToClass[val]) {
             gameState.playerColor = val;
@@ -471,7 +471,7 @@ function displayTutorialWeaponFound() {
     content.innerHTML = `
         <div class="location-title">${locations['여명각'].name}</div>
         <p class="story-text" style="margin-top:15px;">수풀 사이에서 낡은 무기 하나를 발견했습니다.</p>
-        <p style="margin-top:10px; color:#ffd700;">★ '${weapon.name}'을(를) 손에 넣었습니다!</p>
+        <p style="margin-top:10px; color:#2196f3;">★ '${weapon.name}'을(를) 손에 넣었습니다!</p>
         <div style="margin-top:20px;">${choiceHtml('전투 시작')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => {
@@ -520,7 +520,7 @@ function travelToDawnpoint() {
         const content = document.getElementById('gameContent');
         content.innerHTML = `
             <div class="location-title">${locations['여명각'].name}</div>
-            <p class="system-message" style="color:#ffd700;">* 여명각의 오래된 제단 위, 완성된 조각들이 빛을 내며 하나의 검으로 변합니다.</p>
+            <p class="system-message" style="color:#2196f3;">* 여명각의 오래된 제단 위, 완성된 조각들이 빛을 내며 하나의 검으로 변합니다.</p>
             <p style="margin-top:15px; color:#ffeb3b; font-weight:bold;">★ '종극의 검'을 획득했습니다!</p>
             <p style="margin-top:10px; color:#aaa; font-style:italic;">"태초부터의 시작을 두려움보다 도전으로 보는 자만이..."</p>
             <div style="margin-top:20px;">${choiceHtml('돌아가기')}</div>
@@ -747,8 +747,8 @@ function showSkillMenu() {
     const skills = skillData[gameState.playerClass];
     const content = document.getElementById('gameContent');
     content.innerHTML += `
-        <div style="margin-top:15px; padding:12px; border:1px dashed #ffd700; border-radius:4px;">
-            <p style="color:#ffd700; margin-bottom:8px;">사용할 스킬을 선택하세요 (mp: ${round1(gameState.mp)})</p>
+        <div style="margin-top:15px; padding:12px; border:1px dashed #2196f3; border-radius:4px;">
+            <p style="color:#2196f3; margin-bottom:8px;">사용할 스킬을 선택하세요 (mp: ${round1(gameState.mp)})</p>
             <div style="display:flex; flex-direction:column; gap:6px;">
                 ${['general', 'advanced', 'ultimate'].map(k => {
                     const s = skills[k];
@@ -941,7 +941,7 @@ function enemyTurn() {
                     gameState.indomitableUsed = true;
                     gameState.hp = Math.min(gameState.maxHp, gameState.hp + 5);
                     b.indomitableActive = true;
-                    addLog('<span style="color:#ffd700;">* 불굴의 의지: hp가 회복되고 atk가 크게 오릅니다!</span>');
+                    addLog('<span style="color:#2196f3;">* 불굴의 의지: hp가 회복되고 atk가 크게 오릅니다!</span>');
                 }
             }
         }
@@ -1029,9 +1029,9 @@ function onRegionBossVictory(loc, wasIndomitable) {
     updateInventory();
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <h2 style="color:#ffd700;">★ 지역보스 격퇴!</h2>
+        <h2 style="color:#2196f3;">★ 지역보스 격퇴!</h2>
         <p class="system-message">* 시스템: '${loc.boss.name}'을(를) 물리쳤습니다!</p>
-        <p style="margin-top:10px; color:#ffd700;">전리품: 골드 ${goldDrop}, 재료 3개</p>
+        <p style="margin-top:10px; color:#2196f3;">전리품: 골드 ${goldDrop}, 재료 3개</p>
         <div style="margin-top:20px;">${choiceHtml('계속')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => { if (val === '계속') displayLocation(); });
@@ -1231,8 +1231,8 @@ function displayEndingGood() {
             <p style="color:#4caf50; font-weight:bold; margin-top:15px;">당신은 시스템을 격퇴했다!</p>
             <p style="margin-top:20px;">빛이 사라지고, 세계가 자유로워졌다.<br>루미는 자신의 빛으로 새로운 세계를 이끌기 시작했다.</p>
             <p style="margin-top:20px; color:#ffb6c1; font-style:italic;">"당신이 날 도와주셔서 감사합니다."</p>
-            <p style="margin-top:20px; color:#ffd700;">* 시스템: '이 검을 얻으셨다니... 정말 이 게임을 끝까지 깨주셨네요.'</p>
-            <p style="margin-top:5px; color:#ffd700;">* 시스템: '플레이해주셔서 감사합니다.'</p>
+            <p style="margin-top:20px; color:#2196f3;">* 시스템: '이 검을 얻으셨다니... 정말 이 게임을 끝까지 깨주셨네요.'</p>
+            <p style="margin-top:5px; color:#2196f3;">* 시스템: '플레이해주셔서 감사합니다.'</p>
             <p style="margin-top:30px; text-align:center; color:#ffeb3b; font-size:18px;">★ 4차 - 루미와 빛의 세계 해방 · 게임 클리어 ★</p>
         </div>
         <div style="margin-top:30px; text-align:center;"><button class="cmd-btn" onclick="restartGame()">다시 시작</button></div>
@@ -1280,7 +1280,7 @@ function updateTraits() {
     const stageNames = ['미강화', '1차 강화', '2차 강화', '최종형'];
     el.innerHTML = `
         <div style="margin-bottom:8px;">
-            <span style="color:#ffd700;">${gameState.lvatt}</span> <span style="color:#888; font-size:11px;">(${stageNames[stage]})</span>
+            <span style="color:#2196f3;">${gameState.lvatt}</span> <span style="color:#888; font-size:11px;">(${stageNames[stage]})</span>
             <div style="color:#aaa; font-size:11px; margin-top:2px;">${stage > 0 ? t.lvStages[stage - 1] : '무기를 강화하면 효과가 발동됩니다'}</div>
         </div>
         <div>
