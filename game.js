@@ -937,6 +937,7 @@ function updateInventory() {
         ? items.map(item => `<div class="inventory-item">📦 ${item}</div>`).join('')
         : '<div style="color:#666; font-size:11px;">아이템 없음</div>';
 
+    document.getElementById('hiddenPiecesSection').style.display = gameState.hiddenPieces.length > 0 ? 'block' : 'none';
     const hiddenDiv = document.getElementById('hiddenPieces');
     hiddenDiv.innerHTML = `
         <div>수집된 피스: <span id="hiddenCount">${gameState.hiddenPieces.length}</span>/3</div>
