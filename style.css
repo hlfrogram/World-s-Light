@@ -23,7 +23,7 @@
     --danger: var(--crimson);
     --warning: var(--amber);
 
-    --mono: ui-monospace, Consolas, 'Cascadia Code', 'JetBrains Mono', 'Fira Code', 'SF Mono', monospace;
+    --mono: 'JetBrains Mono', ui-monospace, Consolas, 'Cascadia Code', 'Fira Code', 'SF Mono', monospace;
     --serif: Georgia, Cambria, 'Iowan Old Style', 'Palatino Linotype', serif;
 }
 
@@ -197,7 +197,7 @@ html, body {
 
 .story-text {
     font-family: var(--serif);
-    color: var(--ink);
+    color: var(--amber);
     font-style: normal;
     font-size: 15.5px;
     margin: 10px 0;
@@ -214,8 +214,8 @@ html, body {
 }
 
 .choice-text:hover {
-    color: #8ff0fb;
-    text-shadow: 0 0 6px rgba(61, 223, 239, 0.45);
+    color: var(--glow-color, #8ff0fb);
+    text-shadow: 0 0 10px var(--glow-color, rgba(61, 223, 239, 0.45));
 }
 
 .skill-tooltip-wrap {

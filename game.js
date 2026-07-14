@@ -20,6 +20,7 @@ function createInitialGameState() {
         inventory: [],
         gold: 0,
         materials: 0,
+        potions: { hp: 0, mp: 0 },
         hiddenPieces: [],
         hiddenPiecesUnlocked: false,
         hiddenWeaponAssembled: false,
@@ -341,7 +342,7 @@ function displayIntro() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2 style="text-align:center; font-size:28px; color:var(--amber); text-shadow:0 0 10px rgba(255,152,0,0.3);">세계의 빛</h2>
-        <p style="text-align:center; margin-top:30px; font-style:italic; color:var(--dim);">당신의 접속을, 오래전부터 기다리고 있었습니다...</p>
+        <p style="text-align:center; margin-top:30px; font-style:italic; color:var(--dim);">누군가 당신의 이름을 부르고 있습니다...</p>
         <div class="system-message" style="margin-top:30px;">* 시스템: '어서오세요, ${gameState.playerName}님'</div>
         <div style="margin-top:20px; text-align:center;">
             <button onclick="runChoice('시작')" class="btn-start-black">시작</button>
@@ -365,7 +366,7 @@ function displayCharacterCreation() {
         <p class="system-message">* 시스템: '캐릭터의 클래스를 정해주세요.'</p>
         <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:1px; background-color:var(--line); border:1px solid var(--line); margin:20px 0;">
             ${colorBoxes.map(([c, hex, cls]) => `
-                <div class="choice-text" onclick="runChoice('${c}')" style="padding:20px 10px; background-color:var(--panel); text-decoration:none; text-align:center;">
+                <div class="choice-text" onclick="runChoice('${c}')" style="padding:20px 10px; background-color:var(--panel); text-decoration:none; text-align:center; --glow-color:${hex};">
                     <div style="width:10px; height:10px; margin:0 auto 12px; background-color:${hex}; transform:rotate(45deg);"></div>
                     <span style="color:${hex}; font-weight:bold;">${cls}</span>
                 </div>`).join('')}
@@ -601,8 +602,8 @@ function displayShop(msg) {
         <p class="system-message">* 상인: '어서오세요. 무엇을 드릴까요?' (보유 골드: ${gameState.gold || 0})</p>
         ${msg ? `<p style="margin-top:10px;">${msg}</p>` : ''}
         <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
-            <div>${choiceHtml('hp 포션 구매')} <span style="color:var(--dim); font-size:11px;">(30골드, hp 최대치의 40% 회복)</span></div>
-            <div>${choiceHtml('mp 포션 구매')} <span style="color:var(--dim); font-size:11px;">(20골드, mp 최대치의 50% 회복)</span></div>
+            <div>${choiceHtml('hp 포션 구매')} <span style="color:var(--dim); font-size:11px;">(30골드, hp 최대치의 40% 회복 · 보유: ${gameState.potions.hp})</span></div>
+            <div>${choiceHtml('mp 포션 구매')} <span style="color:var(--dim); font-size:11px;">(20골드, mp 최대치의 50% 회복 · 보유: ${gameState.potions.mp})</span></div>
             <div>${choiceHtml('돌아가기')}</div>
         </div>
     `;
@@ -620,16 +621,28 @@ function buyPotion(type) {
         msg = '<span style="color:var(--crimson);">골드가 부족합니다.</span>';
     } else {
         gameState.gold -= cost;
-        if (type === 'hp') {
-            gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.4);
-            msg = '<span style="color:#4caf50;">hp 포션을 사용했습니다.</span>';
-        } else {
-            gameState.mp = Math.min(gameState.maxMp, gameState.mp + gameState.maxMp * 0.5);
-            msg = '<span style="color:#4caf50;">mp 포션을 사용했습니다.</span>';
-        }
+        gameState.potions[type]++;
+        msg = `<span style="color:#4caf50;">${type === 'hp' ? 'hp' : 'mp'} 포션을 구매했습니다. (인벤토리에서 확인할 수 있습니다)</span>`;
     }
     updateStats();
+    updateInventory();
     displayShop(msg);
+}
+
+function usePotionInBattle(type) {
+    if (!gameState.potions[type]) return;
+    playerTurn(() => {
+        gameState.potions[type]--;
+        if (type === 'hp') {
+            gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.4);
+            addLog('* hp 포션을 사용했습니다.');
+        } else {
+            gameState.mp = Math.min(gameState.maxMp, gameState.mp + gameState.maxMp * 0.5);
+            addLog('* mp 포션을 사용했습니다.');
+        }
+        updateStats();
+        updateInventory();
+    });
 }
 
 function displayLocation() {
@@ -733,11 +746,11 @@ function renderBattle(title, extraMsg) {
             </div>
             <div style="padding:15px; background-color:rgba(255,77,94,0.08); border:1px solid var(--crimson); border-radius:0;">
                 <p style="font-weight:bold; color:var(--crimson);">${b.enemyName}</p>
-                <p id="battleEnemyHp">HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}</p>
+                <p id="battleEnemyHp">HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--amber)')}</p>
             </div>
         </div>
         <div style="margin-top:20px;">
-            ${choiceHtml('공격')} ${choiceHtml('스킬')} ${choiceHtml('방어')} ${!b.isBoss ? choiceHtml('도망') : ''}
+            ${choiceHtml('공격')} ${choiceHtml('스킬')} ${choiceHtml('방어')} ${(gameState.potions.hp || gameState.potions.mp) ? choiceHtml('포션') : ''} ${!b.isBoss ? choiceHtml('도망') : ''}
         </div>
     `;
     setInput('명령어를 입력하세요... (공격/스킬/방어' + (!b.isBoss ? '/도망' : '') + ')', handleBattleCommand);
@@ -749,7 +762,7 @@ function updateBattleDisplay() {
     const playerBox = document.getElementById('battlePlayerHp');
     const enemyBox = document.getElementById('battleEnemyHp');
     if (playerBox) playerBox.innerHTML = `HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}`;
-    if (enemyBox) enemyBox.innerHTML = `HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}`;
+    if (enemyBox) enemyBox.innerHTML = `HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--amber)')}`;
 }
 
 function handleBattleCommand(cmd) {
@@ -758,6 +771,7 @@ function handleBattleCommand(cmd) {
     if (cmd === '공격') { playerTurn(() => attackEnemy(b, 1)); }
     else if (cmd === '스킬') { showSkillMenu(); }
     else if (cmd === '방어') { playerTurn(() => { b.defending = true; addLog('* 방어 태세를 취합니다.'); }); }
+    else if (cmd === '포션') { showPotionMenu(); }
     else if (cmd === '도망' && !b.isBoss) { tryFlee(); }
     else if (skillData[gameState.playerClass] && Object.values(skillData[gameState.playerClass]).some(s => s.name === cmd)) {
         useSkillByName(cmd);
@@ -785,6 +799,25 @@ function showSkillMenu() {
     setInput('스킬 이름을 입력하세요...', (val) => {
         if (val === '취소') { renderBattle(gameState.battle.isBoss ? `⚡ ${gameState.battle.enemyName}` : '⚔️ 전투!', '* 무엇을 하시겠습니까?'); return; }
         handleBattleCommand(val);
+    });
+}
+
+function showPotionMenu() {
+    const content = document.getElementById('gameContent');
+    content.innerHTML += `
+        <div style="margin-top:15px; padding:12px; border:1px dashed var(--amber); border-radius:0;">
+            <p style="color:var(--amber); margin-bottom:8px;">사용할 포션을 선택하세요</p>
+            <div style="display:flex; flex-direction:column; gap:6px;">
+                ${gameState.potions.hp ? `<div>${choiceHtml('hp 포션 사용')} <span style="color:var(--dim); font-size:11px;">(보유 ${gameState.potions.hp}개, hp 40% 회복)</span></div>` : ''}
+                ${gameState.potions.mp ? `<div>${choiceHtml('mp 포션 사용')} <span style="color:var(--dim); font-size:11px;">(보유 ${gameState.potions.mp}개, mp 50% 회복)</span></div>` : ''}
+                <div>${choiceHtml('취소')}</div>
+            </div>
+        </div>
+    `;
+    setInput('포션을 선택하세요...', (val) => {
+        if (val === '취소') { renderBattle(gameState.battle.isBoss ? `⚡ ${gameState.battle.enemyName}` : '⚔️ 전투!', '* 무엇을 하시겠습니까?'); return; }
+        if (val === 'hp 포션 사용') usePotionInBattle('hp');
+        else if (val === 'mp 포션 사용') usePotionInBattle('mp');
     });
 }
 
@@ -1329,8 +1362,12 @@ function updateInventory() {
     const inv = document.getElementById('inventory');
     const currentWeapon = getWeaponTiers()[gameState.weaponTier];
     const items = [...gameState.inventory, currentWeapon.name !== '맨손' ? currentWeapon.name : null].filter(Boolean);
-    inv.innerHTML = items.length > 0
-        ? items.map(item => `<div class="inventory-item">${getItemEmoji(item)} ${item}</div>`).join('')
+    const potionItems = [];
+    if (gameState.potions.hp) potionItems.push(`🧪 hp 포션 ×${gameState.potions.hp}`);
+    if (gameState.potions.mp) potionItems.push(`🧪 mp 포션 ×${gameState.potions.mp}`);
+    const rows = [...items.map(item => `<div class="inventory-item">${getItemEmoji(item)} ${item}</div>`), ...potionItems.map(p => `<div class="inventory-item">${p}</div>`)];
+    inv.innerHTML = rows.length > 0
+        ? rows.join('')
         : '<div style="color:var(--dim); font-size:11px;">아이템 없음</div>';
 
     document.getElementById('hiddenPiecesSection').style.display = gameState.hiddenPieces.length > 0 ? 'block' : 'none';
