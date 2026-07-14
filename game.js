@@ -269,13 +269,13 @@ function renderBar(current, max, color) {
     const total = Math.max(1, Math.round(max));
     const filled = Math.max(0, Math.min(total, Math.round(current)));
     const c = color || 'var(--cyan)';
-    let html = '<span style="display:inline-flex; gap:2px; vertical-align:middle;">';
+    let bar = '<span style="display:inline-flex; gap:2px; vertical-align:middle;">';
     for (let i = 0; i < total; i++) {
         const on = i < filled;
-        html += `<span style="display:inline-block; width:10px; height:11px; background-color:${on ? c : 'transparent'}; border:1px solid ${on ? c : 'var(--line)'};"></span>`;
+        bar += `<span style="display:inline-block; width:10px; height:11px; background-color:${on ? c : 'transparent'}; border:1px solid ${on ? c : 'var(--line)'};"></span>`;
     }
-    html += '</span>';
-    return html;
+    bar += '</span>';
+    return `<span class="skill-tooltip-wrap">${bar}<span class="skill-tooltip">${round1(current)}/${Math.round(max)}</span></span>`;
 }
 function addLog(html) {
     const content = document.getElementById('gameContent');
@@ -341,7 +341,7 @@ function displayIntro() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2 style="text-align:center; font-size:28px; color:var(--amber); text-shadow:0 0 10px rgba(255,152,0,0.3);">세계의 빛</h2>
-        <p style="text-align:center; margin-top:30px; font-style:italic; color:var(--dim);">환상의 세계로 당신을 초대합니다...</p>
+        <p style="text-align:center; margin-top:30px; font-style:italic; color:var(--dim);">당신의 접속을, 오래전부터 기다리고 있었습니다...</p>
         <div class="system-message" style="margin-top:30px;">* 시스템: '어서오세요, ${gameState.playerName}님'</div>
         <div style="margin-top:20px; text-align:center;">
             <button onclick="runChoice('시작')" class="btn-start-black">시작</button>
@@ -363,7 +363,7 @@ function displayCharacterCreation() {
     content.innerHTML = `
         <h2>클래스 선택</h2>
         <p class="system-message">* 시스템: '캐릭터의 클래스를 정해주세요.'</p>
-        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; background-color:var(--line); border:1px solid var(--line); margin:20px 0; max-width:360px;">
+        <div style="display:grid; grid-template-columns:repeat(4, 1fr); gap:1px; background-color:var(--line); border:1px solid var(--line); margin:20px 0;">
             ${colorBoxes.map(([c, hex, cls]) => `
                 <div class="choice-text" onclick="runChoice('${c}')" style="padding:20px 10px; background-color:var(--panel); text-decoration:none; text-align:center;">
                     <div style="width:10px; height:10px; margin:0 auto 12px; background-color:${hex}; transform:rotate(45deg);"></div>
@@ -440,7 +440,6 @@ function displayTutorialChoice() {
     content.innerHTML = `
         <h2>튜토리얼</h2>
         <div class="system-message">* 시스템: '튜토리얼을 진행하시겠습니까?' (Y/N)</div>
-        <p style="margin-top:15px; color:var(--dim);">튜토리얼: 전투와 명령어를 배우는 과정입니다. 스킵하면 바로 모험이 시작됩니다.</p>
         <div style="margin-top:15px;">${choiceHtml('Y')} ${choiceHtml('N')}</div>
     `;
     setInput('Y 또는 N을 입력하세요', (val) => {
@@ -515,9 +514,10 @@ function displayTravelMenu() {
         <div class="location-desc">${locations['세계수의 심장'].desc}</div>
         <p class="system-message">* 시스템: '어디로 가시겠습니까?'</p>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">${rows}${lockedRow}</div>
-        <div style="margin-top:15px;">${choiceHtml('대장간')} ${choiceHtml('상점')} ${choiceHtml('여명각으로')}</div>
+        <div style="margin-top:15px;">${choiceHtml('대장간')} ${choiceHtml('상점')}</div>
         ${readyForBoss() ? `<div style="margin-top:15px;">${choiceHtml('사월정으로 이동')}</div>` : ''}
         ${readyForFinal() ? `<div style="margin-top:15px;">${choiceHtml('종천각으로 이동')}</div>` : ''}
+        <div style="margin-top:26px; opacity:0.35; font-size:11px;">${choiceHtml('여명각으로')}</div>
     `;
     setInput('지역명을 입력하세요...', (val) => {
         if (checkEasterEgg(val)) return;
@@ -567,10 +567,10 @@ function displayForge() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2>🔨 대장간</h2>
-        <p class="system-message">* 대장장이: '재료를 가져오면 무기를 강화해 드리죠.' (보유 재료: ${gameState.materials || 0})</p>
+        <p class="system-message">* 대장장이: '강화 재료를 가져오면 무기를 강화해 드리죠.' (보유 강화 재료: ${gameState.materials || 0})</p>
         <div style="margin-top:15px; display:flex; flex-direction:column; gap:8px;">
             ${canUpgradeWeapon
-                ? `<div>${choiceHtml('무기 강화')} <span style="color:var(--dim); font-size:11px;">(재료 ${upgradeCost}개 · 다음 단계: '${tiers[gameState.weaponTier + 1].name}')</span></div>`
+                ? `<div>${choiceHtml('무기 강화')} <span style="color:var(--dim); font-size:11px;">(강화 재료 ${upgradeCost}개 · 다음 단계: '${tiers[gameState.weaponTier + 1].name}')</span></div>`
                 : `<p style="color:var(--dim); font-size:11px;">현재 무기가 이미 최고 단계입니다.</p>`}
             ${forgeUnlocked ? `<div>${choiceHtml('조립')} <span style="color:var(--dim); font-size:11px;">(히든 피스 3개 조립)</span></div>` : ''}
             <div>${choiceHtml('돌아가기')}</div>
@@ -579,7 +579,7 @@ function displayForge() {
     setInput('명령어를 입력하세요...', (val) => {
         if (val === '무기 강화' && canUpgradeWeapon) {
             if ((gameState.materials || 0) < upgradeCost) {
-                addLog('<span style="color:var(--crimson);">* 대장장이: "재료가 부족합니다."</span>');
+                addLog('<span style="color:var(--crimson);">* 대장장이: "강화 재료가 부족합니다."</span>');
                 return;
             }
             gameState.materials -= upgradeCost;
@@ -729,11 +729,11 @@ function renderBattle(title, extraMsg) {
         <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             <div style="padding:15px; background-color:rgba(61,223,239,0.06); border:1px solid var(--cyan); border-radius:0;">
                 <p style="font-weight:bold; color:var(--cyan);">${gameState.playerName}</p>
-                <p id="battlePlayerHp" title="HP ${round1(gameState.hp)}/${gameState.maxHp} · MP ${round1(gameState.mp)}/${gameState.maxMp}">HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}</p>
+                <p id="battlePlayerHp">HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}</p>
             </div>
             <div style="padding:15px; background-color:rgba(255,77,94,0.08); border:1px solid var(--crimson); border-radius:0;">
                 <p style="font-weight:bold; color:var(--crimson);">${b.enemyName}</p>
-                <p id="battleEnemyHp" title="HP ${round1(b.enemyHp)}/${b.enemyMaxHp}">HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}</p>
+                <p id="battleEnemyHp">HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}</p>
             </div>
         </div>
         <div style="margin-top:20px;">
@@ -748,14 +748,8 @@ function updateBattleDisplay() {
     if (!b) return;
     const playerBox = document.getElementById('battlePlayerHp');
     const enemyBox = document.getElementById('battleEnemyHp');
-    if (playerBox) {
-        playerBox.innerHTML = `HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}`;
-        playerBox.title = `HP ${round1(gameState.hp)}/${gameState.maxHp} · MP ${round1(gameState.mp)}/${gameState.maxMp}`;
-    }
-    if (enemyBox) {
-        enemyBox.innerHTML = `HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}`;
-        enemyBox.title = `HP ${round1(b.enemyHp)}/${b.enemyMaxHp}`;
-    }
+    if (playerBox) playerBox.innerHTML = `HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}`;
+    if (enemyBox) enemyBox.innerHTML = `HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}`;
 }
 
 function handleBattleCommand(cmd) {
@@ -1028,7 +1022,7 @@ function onFieldVictory(loc, wasIndomitable) {
         let dropText = `골드 ${goldDrop}`;
         if (Math.random() < 0.4) {
             gameState.materials = (gameState.materials || 0) + 1;
-            dropText += ', 재료 1개';
+            dropText += ', 강화 재료 1개';
         }
         dropMsg = `<p style="margin-top:10px; color:var(--dim);">전리품: ${dropText}</p>`;
     }
@@ -1062,7 +1056,7 @@ function onRegionBossVictory(loc, wasIndomitable) {
     content.innerHTML = `
         <h2 style="color:var(--amber);">★ 지역보스 격퇴!</h2>
         <p class="system-message">* 시스템: '${loc.boss.name}'을(를) 물리쳤습니다!</p>
-        <p style="margin-top:10px; color:var(--amber);">전리품: 골드 ${goldDrop}, 재료 3개</p>
+        <p style="margin-top:10px; color:var(--amber);">전리품: 골드 ${goldDrop}, 강화 재료 3개</p>
         <div style="margin-top:20px;">${choiceHtml('계속')}</div>
     `;
     setInput('명령어를 입력하세요...', (val) => { if (val === '계속') displayLocation(); });
@@ -1292,12 +1286,8 @@ function updatePlayerInfo() {
     if (gameState.playerClass) hasUnsavedProgress = true;
 }
 function updateStats() {
-    const statHpEl = document.getElementById('statHp');
-    const statMpEl = document.getElementById('statMp');
-    statHpEl.innerHTML = renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)');
-    statHpEl.title = `HP ${round1(gameState.hp)}/${gameState.maxHp}`;
-    statMpEl.innerHTML = renderBar(gameState.mp, gameState.maxMp, 'var(--amber)');
-    statMpEl.title = `MP ${round1(gameState.mp)}/${gameState.maxMp}`;
+    document.getElementById('statHp').innerHTML = renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)');
+    document.getElementById('statMp').innerHTML = renderBar(gameState.mp, gameState.maxMp, 'var(--amber)');
     document.getElementById('statAtk').textContent = gameState.atk + getWeaponTiers()[gameState.weaponTier].atkBonus + (gameState.hasHiddenWeapon ? 12 : 0);
     document.getElementById('statCrit').textContent = gameState.crit + '%';
     document.getElementById('statAgi').textContent = gameState.agi + '%';
@@ -1313,23 +1303,34 @@ function updateTraits() {
     const stage = getTraitStage();
     const stageNames = ['미강화', '1차 강화', '2차 강화', '최종형'];
     el.innerHTML = `
-        <div style="margin-bottom:8px;">
-            <span style="color:var(--amber);">${gameState.lvatt}</span> <span style="color:var(--dim); font-size:11px;">(${stageNames[stage]})</span>
-            <div style="color:var(--dim); font-size:11px; margin-top:2px;">${stage > 0 ? t.lvStages[stage - 1] : '무기를 강화하면 효과가 발동됩니다'}</div>
+        <div style="margin-bottom:10px; font-family:var(--serif);">
+            <span style="color:var(--amber); font-size:14px; font-style:italic;">${gameState.lvatt}</span> <span style="color:var(--dim); font-size:11px;">(${stageNames[stage]})</span>
+            <div style="color:var(--dim); font-size:11.5px; margin-top:3px; line-height:1.5;">${stage > 0 ? t.lvStages[stage - 1] : '무기를 강화하면 효과가 발동됩니다'}</div>
         </div>
-        <div>
+        <div style="font-family:var(--serif);">
             ${gameState.hdattUnlocked
-                ? `<span style="color:var(--amber);">★ ${gameState.hdatt}</span><div style="color:var(--dim); font-size:11px; margin-top:2px;">${t.hiddenDesc}</div>`
-                : `<span style="color:var(--dim);">??? (미발견)</span><div style="color:var(--dim); font-size:11px; margin-top:2px;">${classData[gameState.playerClass].hdattHint}</div>`}
+                ? `<span style="color:var(--amber); font-size:14px; font-style:italic;">★ ${gameState.hdatt}</span><div style="color:var(--dim); font-size:11.5px; margin-top:3px; line-height:1.5;">${t.hiddenDesc}</div>`
+                : `<span style="color:var(--dim); font-size:14px; font-style:italic;">??? (미발견)</span><div style="color:var(--dim); font-size:11.5px; margin-top:3px; line-height:1.5;">${classData[gameState.playerClass].hdattHint}</div>`}
         </div>
     `;
+}
+function getItemEmoji(name) {
+    if (name === '종극의 검') return '⚔️';
+    if (name.includes('대거') || name.includes('더크') || name.includes('스틸레토') || name.includes('섀도우')) return '🔪';
+    if (name.includes('소드') || name.includes('블레이드')) return '🗡️';
+    if (name.includes('너클') || name.includes('가운틀릿') || name.includes('건틀렛')) return '👊';
+    if (name.includes('완드') || name.includes('스태프') || name.includes('그리모어') || name.includes('오브')) return '🔮';
+    if (name.includes('로자리오') || name.includes('셉터') || name.includes('십자가') || name.includes('성물')) return '📿';
+    if (name.includes('보우')) return '🏹';
+    if (name.includes('부적') || name.includes('인형') || name.includes('스톤') || name.includes('토템')) return '🪬';
+    return '📦';
 }
 function updateInventory() {
     const inv = document.getElementById('inventory');
     const currentWeapon = getWeaponTiers()[gameState.weaponTier];
     const items = [...gameState.inventory, currentWeapon.name !== '맨손' ? currentWeapon.name : null].filter(Boolean);
     inv.innerHTML = items.length > 0
-        ? items.map(item => `<div class="inventory-item">📦 ${item}</div>`).join('')
+        ? items.map(item => `<div class="inventory-item">${getItemEmoji(item)} ${item}</div>`).join('')
         : '<div style="color:var(--dim); font-size:11px;">아이템 없음</div>';
 
     document.getElementById('hiddenPiecesSection').style.display = gameState.hiddenPieces.length > 0 ? 'block' : 'none';

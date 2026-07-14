@@ -120,6 +120,7 @@ html, body {
     cursor: pointer;
     font-family: var(--mono);
     font-weight: bold;
+    font-style: italic;
     letter-spacing: 0.1em;
     font-size: 14px;
     transition: all 0.15s;
@@ -245,7 +246,7 @@ html, body {
 }
 
 .location-title {
-    color: var(--amber);
+    color: var(--ink);
     font-weight: bold;
     font-size: 18px;
     margin: 15px 0 10px 0;
@@ -254,7 +255,7 @@ html, body {
 
 .location-desc {
     font-family: var(--serif);
-    color: var(--dim);
+    color: var(--amber);
     font-style: italic;
     margin-bottom: 15px;
     padding-left: 10px;
@@ -276,7 +277,8 @@ html, body {
 .inventory-section h3 {
     color: var(--cyan-dim);
     font-size: 10.5px;
-    letter-spacing: 0.14em;
+    font-weight: 700;
+    letter-spacing: 0.16em;
     text-transform: uppercase;
     margin-top: 18px;
     margin-bottom: 10px;
