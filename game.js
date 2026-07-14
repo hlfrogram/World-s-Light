@@ -267,6 +267,11 @@ const FIELD_LOCATIONS = ['청풍협', '황혼령', '염화대지'];
 
 // ===== 유틸 =====
 function round1(n) { return Math.round(n * 10) / 10; }
+function formatLocationName(name) {
+    const m = name.match(/^(.*?)(\s*\(.*\))$/);
+    if (!m) return name;
+    return `${m[1]}<span style="font-family:var(--serif); font-style:italic; color:var(--dim); letter-spacing:0.02em;">${m[2]}</span>`;
+}
 function renderBar(current, max, color) {
     const total = Math.max(1, Math.round(max));
     const filled = Math.max(0, Math.min(total, Math.round(current)));
@@ -457,10 +462,10 @@ function displayStage1Start() {
     const loc = '백야촌';
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <div class="location-title">${locations[loc].name}</div>
+        <div class="location-title">${formatLocationName(locations[loc].name)}</div>
         <div class="location-desc">${locations[loc].desc}</div>
         <p class="system-message">* 시스템: ${loc}에 도착했습니다.</p>
-        <p style="margin-top:15px; color:var(--dim);">마을 사람들의 도움으로 여기까지 왔습니다. 이제 모험을 시작해야 합니다.</p>
+        <p style="margin-top:15px; color:var(--dim);">정신을 차려보니, 이미 이곳에 도착해 있었습니다. 이제 모험을 시작해야 합니다.</p>
         <p class="system-message" style="margin-top:10px;">* 시스템: '세이브는 세계수의 심장에서만 가능합니다.'</p>
         <div style="margin-top:20px;">${choiceHtml('모험 시작')}</div>
     `;
@@ -474,7 +479,7 @@ function displayStage1Start() {
 function displayTutorialWake() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <div class="location-title">${locations['여명각'].name}</div>
+        <div class="location-title">${formatLocationName(locations['여명각'].name)}</div>
         <p class="story-text" style="margin-top:15px;">풀숲에서 눈을 뜨자, 마물 한 마리가 저만치서 이쪽을 노려보고 있습니다.</p>
         <p class="system-message" style="margin-top:10px;">* 시스템: '먼저, 주변을 탐색해 주세요.'</p>
         <div style="margin-top:20px;">${choiceHtml('탐색')}</div>
@@ -492,7 +497,7 @@ function displayTutorialWeaponFound() {
     const weapon = getWeaponTiers()[1];
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <div class="location-title">${locations['여명각'].name}</div>
+        <div class="location-title">${formatLocationName(locations['여명각'].name)}</div>
         <p class="story-text" style="margin-top:15px;">수풀 사이에서 낡은 무기 하나를 발견했습니다.</p>
         <p style="margin-top:10px; color:var(--amber);">★ '${weapon.name}'을(를) 손에 넣었습니다!</p>
         <div style="margin-top:20px;">${choiceHtml('전투 시작')}</div>
@@ -512,7 +517,7 @@ function displayTravelMenu() {
     const rows = FIELD_LOCATIONS.map(key => `<div style="padding:10px; background-color:rgba(0,191,255,0.1); border-left:3px solid var(--cyan); border-radius:0;">${choiceHtml(key)} - ${locations[key].name}</div>`).join('');
     const lockedRow = `<div style="padding:10px; background-color:rgba(100,100,100,0.1); border-left:3px solid var(--line); border-radius:0; color:var(--dim);">🔒 설향원 (개발중)</div>`;
     content.innerHTML = `
-        <div class="location-title">${locations['세계수의 심장'].name}</div>
+        <div class="location-title">${formatLocationName(locations['세계수의 심장'].name)}</div>
         <div class="location-desc">${locations['세계수의 심장'].desc}</div>
         <p class="system-message">* 시스템: '어디로 가시겠습니까?'</p>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">${rows}${lockedRow}</div>
@@ -542,7 +547,7 @@ function travelToDawnpoint() {
         updateInventory();
         const content = document.getElementById('gameContent');
         content.innerHTML = `
-            <div class="location-title">${locations['여명각'].name}</div>
+            <div class="location-title">${formatLocationName(locations['여명각'].name)}</div>
             <p class="system-message" style="color:var(--amber);">* 여명각의 오래된 제단 위, 완성된 조각들이 빛을 내며 하나의 검으로 변합니다.</p>
             <p style="margin-top:15px; color:var(--amber); font-weight:bold;">★ '종극의 검'을 획득했습니다!</p>
             <p style="margin-top:10px; color:var(--dim); font-style:italic;">"태초부터의 시작을 두려움보다 도전으로 보는 자만이..."</p>
@@ -553,7 +558,7 @@ function travelToDawnpoint() {
     }
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <div class="location-title">${locations['여명각'].name}</div>
+        <div class="location-title">${formatLocationName(locations['여명각'].name)}</div>
         <div class="location-desc">${locations['여명각'].desc}</div>
         <p class="system-message">* 여명각을 둘러보지만, 특별한 것은 없습니다.</p>
         <div style="margin-top:20px;">${choiceHtml('돌아가기')}</div>
@@ -657,7 +662,7 @@ function displayLocation() {
         ? `<p style="margin-top:10px; color:var(--amber); font-style:italic;">숨겨진 진실: ${loc.truth}</p>` : '';
     const bossAvailable = loc.boss && gameState.exploreCount[key] >= 2 && !gameState.regionBossDefeated[key];
     content.innerHTML = `
-        <div class="location-title">${loc.name}</div>
+        <div class="location-title">${formatLocationName(loc.name)}</div>
         <div class="location-desc">${loc.desc}</div>
         ${truthBlock}
         <p class="system-message">* 시스템: ${loc.name}에 도착했습니다.</p>
@@ -1260,7 +1265,7 @@ function goToFinalBattle() {
     gameState.currentLocation = '종천각';
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <div class="location-title">${locations['종천각'].name}</div>
+        <div class="location-title">${formatLocationName(locations['종천각'].name)}</div>
         <div class="location-desc">${locations['종천각'].desc}</div>
         <p class="system-message">* 시스템: 최종 지역에 도착했습니다.</p>
         <p style="margin-top:20px; color:var(--dim);">이곳에서 시스템과의 최종 대결이 일어날 것이다.</p>
