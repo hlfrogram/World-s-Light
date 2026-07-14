@@ -179,7 +179,7 @@ const skillData = {
         ultimate: { name: '차원 붕괴', mp: 5, desc: '확정 크리티컬의 최상급 마법', apply(b) { attackEnemy(b, 2.6, { forceCrit: true, viaSkill: true }); } },
     },
     '성직자': {
-        general: { name: '치유의 빛', mp: 2, desc: '자신 hp 20% 회복', apply(b) { gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.2); updateStats(); addLog(`* 치유의 빛: hp가 회복되었습니다. (${round1(gameState.hp)}/${gameState.maxHp})`); } },
+        general: { name: '치유의 빛', mp: 2, desc: '자신 hp 20% 회복', apply(b) { gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.2); updateStats(); addLog('* 치유의 빛: hp가 회복되었습니다.'); } },
         advanced: { name: '성스러운 방패', mp: 3, desc: '2턴간 받는 피해 30% 감소', apply(b) { b.playerShield = 2; addLog('* 성스러운 방패: 2턴간 받는 피해가 줄어듭니다.'); } },
         ultimate: { name: '심판의 빛', mp: 5, desc: '공격 + hp 15% 회복', apply(b) { attackEnemy(b, 1.9); gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.15); updateStats(); } },
     },
@@ -195,7 +195,7 @@ const skillData = {
             const bonus = Math.round(gameState.agi);
             const bonusLoss = Math.round((bonus / 10) * 10) / 10;
             b.enemyHp = Math.max(0, b.enemyHp - bonusLoss);
-            addLog(`* 민첩을 실은 화살이 공격력 ${bonus}만큼 적 hp를 ${bonusLoss}칸 깎았습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+            addLog(`* 민첩을 실은 화살이 공격력 ${bonus}만큼 적 hp를 ${bonusLoss}칸 깎았습니다!`);
         } },
     },
     '도적': {
@@ -268,12 +268,18 @@ function round1(n) { return Math.round(n * 10) / 10; }
 function renderBar(current, max, color) {
     const total = Math.max(1, Math.round(max));
     const filled = Math.max(0, Math.min(total, Math.round(current)));
-    return `<span style="color:${color || 'var(--cyan)'};">${'■'.repeat(filled)}</span><span style="color:var(--dim); opacity:0.4;">${'□'.repeat(total - filled)}</span>`;
+    const c = color || 'var(--cyan)';
+    let html = '<span style="display:inline-flex; gap:2px; vertical-align:middle;">';
+    for (let i = 0; i < total; i++) {
+        const on = i < filled;
+        html += `<span style="display:inline-block; width:10px; height:11px; background-color:${on ? c : 'transparent'}; border:1px solid ${on ? c : 'var(--line)'};"></span>`;
+    }
+    html += '</span>';
+    return html;
 }
 function addLog(html) {
     const content = document.getElementById('gameContent');
     content.innerHTML += `<p class="system-message">${html}</p>`;
-    content.scrollTop = content.scrollHeight;
 }
 function setInput(placeholder, onSubmit) {
     const input = document.getElementById('userInput');
@@ -357,12 +363,16 @@ function displayCharacterCreation() {
     content.innerHTML = `
         <h2>클래스 선택</h2>
         <p class="system-message">* 시스템: '캐릭터의 클래스를 정해주세요.'</p>
-        <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(100px, 1fr)); gap:1px; background-color:var(--line); border:1px solid var(--line); margin:20px 0;">
+        <div style="display:grid; grid-template-columns:repeat(2, 1fr); gap:1px; background-color:var(--line); border:1px solid var(--line); margin:20px 0; max-width:360px;">
             ${colorBoxes.map(([c, hex, cls]) => `
                 <div class="choice-text" onclick="runChoice('${c}')" style="padding:20px 10px; background-color:var(--panel); text-decoration:none; text-align:center;">
                     <div style="width:10px; height:10px; margin:0 auto 12px; background-color:${hex}; transform:rotate(45deg);"></div>
                     <span style="color:${hex}; font-weight:bold;">${cls}</span>
                 </div>`).join('')}
+            <div style="padding:20px 10px; background-color:var(--panel); text-align:center; opacity:0.4; cursor:default;">
+                <div style="width:10px; height:10px; margin:0 auto 12px; background-color:var(--dim); transform:rotate(45deg);"></div>
+                <span style="color:var(--dim); font-weight:bold;">???</span>
+            </div>
         </div>
     `;
     setInput('클래스를 선택하세요...', (val) => {
@@ -505,14 +515,13 @@ function displayTravelMenu() {
         <div class="location-desc">${locations['세계수의 심장'].desc}</div>
         <p class="system-message">* 시스템: '어디로 가시겠습니까?'</p>
         <div style="display:flex; flex-direction:column; gap:8px; margin-top:15px;">${rows}${lockedRow}</div>
-        <div style="margin-top:15px;">${choiceHtml('대장간')} ${choiceHtml('상점')}</div>
+        <div style="margin-top:15px;">${choiceHtml('대장간')} ${choiceHtml('상점')} ${choiceHtml('여명각으로')}</div>
         ${readyForBoss() ? `<div style="margin-top:15px;">${choiceHtml('사월정으로 이동')}</div>` : ''}
         ${readyForFinal() ? `<div style="margin-top:15px;">${choiceHtml('종천각으로 이동')}</div>` : ''}
-        <p style="margin-top:15px; color:var(--dim); font-size:12px;">('0' 입력 시 여명각으로 이동)</p>
     `;
     setInput('지역명을 입력하세요...', (val) => {
         if (checkEasterEgg(val)) return;
-        if (val === '0') { travelToDawnpoint(); return; }
+        if (val === '여명각으로') { travelToDawnpoint(); return; }
         if (val === '대장간') { displayForge(); return; }
         if (val === '상점') { displayShop(); return; }
         if (val === '사월정으로 이동' && readyForBoss()) { displayBossEncounter(); return; }
@@ -613,10 +622,10 @@ function buyPotion(type) {
         gameState.gold -= cost;
         if (type === 'hp') {
             gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.4);
-            msg = `<span style="color:#4caf50;">hp 포션을 사용했습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})</span>`;
+            msg = '<span style="color:#4caf50;">hp 포션을 사용했습니다.</span>';
         } else {
             gameState.mp = Math.min(gameState.maxMp, gameState.mp + gameState.maxMp * 0.5);
-            msg = `<span style="color:#4caf50;">mp 포션을 사용했습니다. (mp: ${round1(gameState.mp)}/${gameState.maxMp})</span>`;
+            msg = '<span style="color:#4caf50;">mp 포션을 사용했습니다.</span>';
         }
     }
     updateStats();
@@ -720,11 +729,11 @@ function renderBattle(title, extraMsg) {
         <div style="margin-top:20px; display:grid; grid-template-columns:1fr 1fr; gap:20px;">
             <div style="padding:15px; background-color:rgba(61,223,239,0.06); border:1px solid var(--cyan); border-radius:0;">
                 <p style="font-weight:bold; color:var(--cyan);">${gameState.playerName}</p>
-                <p id="battlePlayerHp">HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}</p>
+                <p id="battlePlayerHp" title="HP ${round1(gameState.hp)}/${gameState.maxHp} · MP ${round1(gameState.mp)}/${gameState.maxMp}">HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}</p>
             </div>
             <div style="padding:15px; background-color:rgba(255,77,94,0.08); border:1px solid var(--crimson); border-radius:0;">
                 <p style="font-weight:bold; color:var(--crimson);">${b.enemyName}</p>
-                <p id="battleEnemyHp">HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}</p>
+                <p id="battleEnemyHp" title="HP ${round1(b.enemyHp)}/${b.enemyMaxHp}">HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}</p>
             </div>
         </div>
         <div style="margin-top:20px;">
@@ -739,8 +748,14 @@ function updateBattleDisplay() {
     if (!b) return;
     const playerBox = document.getElementById('battlePlayerHp');
     const enemyBox = document.getElementById('battleEnemyHp');
-    if (playerBox) playerBox.innerHTML = `HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}`;
-    if (enemyBox) enemyBox.innerHTML = `HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}`;
+    if (playerBox) {
+        playerBox.innerHTML = `HP ${renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)')} · MP ${renderBar(gameState.mp, gameState.maxMp, 'var(--amber)')}`;
+        playerBox.title = `HP ${round1(gameState.hp)}/${gameState.maxHp} · MP ${round1(gameState.mp)}/${gameState.maxMp}`;
+    }
+    if (enemyBox) {
+        enemyBox.innerHTML = `HP ${renderBar(b.enemyHp, b.enemyMaxHp, 'var(--crimson)')}`;
+        enemyBox.title = `HP ${round1(b.enemyHp)}/${b.enemyMaxHp}`;
+    }
 }
 
 function handleBattleCommand(cmd) {
@@ -811,7 +826,7 @@ function playerTurn(action) {
         const bleedDmg = Math.round(b.archerBleed);
         const bleedLoss = Math.round((bleedDmg / 10) * 10) / 10;
         b.enemyHp = Math.max(0, b.enemyHp - bleedLoss);
-        addLog(`* 상처가 벌어지며 공격력 ${bleedDmg}만큼 적 hp가 ${bleedLoss}칸 깎였습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        addLog(`* 상처가 벌어지며 공격력 ${bleedDmg}만큼 적 hp가 ${bleedLoss}칸 깎였습니다!`);
         b.archerBleed = 0;
         if (checkBattleEnd()) return;
     }
@@ -869,7 +884,7 @@ function attackEnemy(b, multiplier, opts) {
     dmg = Math.max(1, Math.round(dmg));
     const hpLoss = Math.round((dmg / 10) * 10) / 10;
     b.enemyHp = Math.max(0, b.enemyHp - hpLoss);
-    addLog(`* ${isCrit ? '치명타! ' : ''}공격력 ${dmg}을(를) 입혀 적 hp가 ${hpLoss}칸 깎였습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+    addLog(`* ${isCrit ? '치명타! ' : ''}공격력 ${dmg}을(를) 입혀 적 hp가 ${hpLoss}칸 깎였습니다!`);
 
     if (cls === '검사' && stage >= 3 && isCrit && b.enemyHp > 0) {
         b.enemyStunned = true;
@@ -886,7 +901,7 @@ function attackEnemy(b, multiplier, opts) {
         const bonus = Math.max(1, Math.round(dmg * (stage >= 2 ? 0.2 : 0.1)));
         const bonusLoss = Math.round((bonus / 10) * 10) / 10;
         b.enemyHp = Math.max(0, b.enemyHp - bonusLoss);
-        addLog(`* 신성한 기운이 공격력 ${bonus}만큼 적 hp를 ${bonusLoss}칸 깎았습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        addLog(`* 신성한 기운이 공격력 ${bonus}만큼 적 hp를 ${bonusLoss}칸 깎았습니다!`);
         if (stage >= 3) {
             gameState.hp = Math.min(gameState.maxHp, gameState.hp + gameState.maxHp * 0.08);
             updateStats();
@@ -896,7 +911,7 @@ function attackEnemy(b, multiplier, opts) {
         const extra = Math.max(1, Math.round(dmg * 0.25));
         const extraLoss = Math.round((extra / 10) * 10) / 10;
         b.enemyHp = Math.max(0, b.enemyHp - extraLoss);
-        addLog(`* 흐르는 화살이 공격력 ${extra}만큼 적 hp를 ${extraLoss}칸 깎았습니다! (적 hp: ${round1(b.enemyHp)}/${b.enemyMaxHp})`);
+        addLog(`* 흐르는 화살이 공격력 ${extra}만큼 적 hp를 ${extraLoss}칸 깎았습니다!`);
     }
     if (cls === '도적') {
         if (!gameState.hdattUnlocked && isFirstAction && isCrit) {
@@ -949,7 +964,7 @@ function enemyTurn() {
             const hpLoss = Math.round((dmg / 10) * 10) / 10;
             const minHp = (b.loc && b.loc.type === 'tutorial') ? 1 : 0;
             gameState.hp = Math.max(minHp, gameState.hp - hpLoss);
-            addLog(`* ${b.enemyName}의 공격! 공격력 ${dmg}을(를) 받아 hp가 ${hpLoss}칸 깎였습니다. (hp: ${round1(gameState.hp)}/${gameState.maxHp})`);
+            addLog(`* ${b.enemyName}의 공격! 공격력 ${dmg}을(를) 받아 hp가 ${hpLoss}칸 깎였습니다.`);
             if (gameState.hp > 0) {
                 if (cls === '검사' && !gameState.hdattUnlocked && gameState.hp <= 2) unlockHiddenTrait();
                 if (cls === '버서커' && !gameState.hdattUnlocked && gameState.hp <= 1) unlockHiddenTrait();
@@ -1003,7 +1018,7 @@ function checkBattleEnd() {
 }
 
 function onFieldVictory(loc, wasIndomitable) {
-    gameState.hp = wasIndomitable ? 1 : gameState.maxHp; gameState.mp = gameState.maxMp;
+    if (wasIndomitable) gameState.hp = 1;
     gameState.fieldVictoryCount = (gameState.fieldVictoryCount || 0) + 1;
     const isTutorial = loc && loc.type === 'tutorial';
     let dropMsg = '';
@@ -1022,7 +1037,7 @@ function onFieldVictory(loc, wasIndomitable) {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
         <h2 style="color:#4caf50;">⚔️ 전투 승리!</h2>
-        <p class="system-message">* 시스템: 마물을 격퇴했습니다! hp와 mp가 모두 회복되었습니다.</p>
+        <p class="system-message">* 시스템: 마물을 격퇴했습니다!</p>
         ${dropMsg}
         ${isTutorial ? '<p style="margin-top:10px; color:var(--dim);">몸에 힘이 풀리며, 잠시 정신을 잃습니다...</p><p class="system-message" style="margin-top:10px;">* 시스템: \'세이브는 세계수의 심장에서만 가능합니다.\'</p>' : ''}
         <div style="margin-top:20px;">${choiceHtml('계속')}</div>
@@ -1035,7 +1050,7 @@ function onFieldVictory(loc, wasIndomitable) {
 }
 
 function onRegionBossVictory(loc, wasIndomitable) {
-    gameState.hp = wasIndomitable ? 1 : gameState.maxHp; gameState.mp = gameState.maxMp;
+    if (wasIndomitable) gameState.hp = 1;
     const key = Object.keys(locations).find(k => locations[k] === loc);
     if (key) gameState.regionBossDefeated[key] = true;
     const goldDrop = 30 + Math.floor(Math.random() * 21);
@@ -1083,7 +1098,6 @@ function onNecrosDefeated() {
     if (!gameState.hiddenPiecesUnlocked) {
         gameState.hiddenPiecesUnlocked = true;
     }
-    gameState.hp = gameState.maxHp; gameState.mp = gameState.maxMp;
     updateStats();
     const content = document.getElementById('gameContent');
     content.innerHTML = `
@@ -1278,8 +1292,12 @@ function updatePlayerInfo() {
     if (gameState.playerClass) hasUnsavedProgress = true;
 }
 function updateStats() {
-    document.getElementById('statHp').innerHTML = renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)');
-    document.getElementById('statMp').innerHTML = renderBar(gameState.mp, gameState.maxMp, 'var(--amber)');
+    const statHpEl = document.getElementById('statHp');
+    const statMpEl = document.getElementById('statMp');
+    statHpEl.innerHTML = renderBar(gameState.hp, gameState.maxHp, 'var(--cyan)');
+    statHpEl.title = `HP ${round1(gameState.hp)}/${gameState.maxHp}`;
+    statMpEl.innerHTML = renderBar(gameState.mp, gameState.maxMp, 'var(--amber)');
+    statMpEl.title = `MP ${round1(gameState.mp)}/${gameState.maxMp}`;
     document.getElementById('statAtk').textContent = gameState.atk + getWeaponTiers()[gameState.weaponTier].atkBonus + (gameState.hasHiddenWeapon ? 12 : 0);
     document.getElementById('statCrit').textContent = gameState.crit + '%';
     document.getElementById('statAgi').textContent = gameState.agi + '%';
@@ -1328,11 +1346,14 @@ async function handleSave() {
         alert('세계수의 심장에서만 저장할 수 있습니다.');
         return;
     }
+    gameState.hp = gameState.maxHp;
+    gameState.mp = gameState.maxMp;
+    updateStats();
     const { error } = await sbClient.from('game_saves').upsert({
         user_id: gameState.userId, game_data: JSON.stringify(gameState), updated_at: new Date(),
     }, { onConflict: 'user_id' });
     if (!error) hasUnsavedProgress = false;
-    alert(error ? '저장 실패: ' + error.message : '게임이 저장되었습니다!');
+    alert(error ? '저장 실패: ' + error.message : '게임이 저장되었습니다! (hp/mp가 모두 회복되었습니다)');
 }
 
 async function handleLoad() {

@@ -130,29 +130,28 @@
             color: #12100a;
             border: none;
             padding: 10px;
-            border-radius: 0;
+            border-radius: 4px;
             font-weight: bold;
-            letter-spacing: 0.05em;
             cursor: pointer;
-            transition: all 0.2s;
+            transition: all 0.3s;
             font-family: var(--mono);
             font-size: 13px;
-            clip-path: polygon(8px 0, 100% 0, calc(100% - 8px) 100%, 0 100%);
         }
 
         .btn:hover {
             background-color: #f3b458;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(232, 162, 61, 0.3);
         }
 
         .btn:active {
-            transform: translateY(1px);
+            transform: translateY(0);
         }
 
         .btn-secondary {
             background-color: transparent;
             color: var(--cyan);
             border: 1px solid var(--cyan-dim);
-            clip-path: none;
         }
 
         .btn-secondary:hover {
@@ -234,7 +233,7 @@
     <div class="auth-container">
         <div class="auth-titlebar"><span class="dot"></span> world-of-light.sys / login</div>
         <div class="auth-body">
-        <h1>세계의 빛</h1>
+        <h1>LOGIN</h1>
         <p>게임에 접속하세요</p>
 
         <div id="errorMessage" class="message error-message"></div>
