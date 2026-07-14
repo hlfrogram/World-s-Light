@@ -151,6 +151,7 @@ function unlockHiddenTrait() {
     if (gameState.hdattUnlocked) return;
     gameState.hdattUnlocked = true;
     addLog(`<span style="color:var(--amber);">★ 히든 특성 발견: '${gameState.hdatt}'</span>`);
+    updateTraits();
 }
 function checkAtkHiddenUnlock() {
     if (!gameState.hdattUnlocked && (gameState.playerClass === '마법사' || gameState.playerClass === '성직자') && getEffectiveAtk() >= 8) {
@@ -385,7 +386,7 @@ function displayCharacterCreation() {
             gameState.hp = stats.hp; gameState.maxHp = stats.hp;
             gameState.mp = stats.mp; gameState.maxMp = stats.mp;
             gameState.atk = stats.atk; gameState.crit = stats.crit; gameState.agi = stats.agi;
-            gameState.lvatt = stats.lvatt; gameState.hdatt = '발견되지 않음';
+            gameState.lvatt = stats.lvatt; gameState.hdatt = stats.hdatt;
             document.getElementById('inventorySection').style.display = 'block';
             updatePlayerInfo(); updateStats(); updateInventory();
             displayStorySkip();
