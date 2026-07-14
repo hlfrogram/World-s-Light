@@ -112,8 +112,8 @@ html, body {
 }
 
 .btn-start-black {
-    background-color: var(--amber);
-    color: var(--ink-on-amber);
+    background-color: var(--cyan);
+    color: var(--void);
     border: none;
     padding: 12px 34px;
     border-radius: 0;
@@ -128,7 +128,7 @@ html, body {
 }
 
 .btn-start-black:hover {
-    background-color: #f3b458;
+    background-color: #8ff0fb;
 }
 
 /* ===== 메인 콘텐츠 ===== */
