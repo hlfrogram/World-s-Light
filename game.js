@@ -416,8 +416,8 @@ function displayStorySkip() {
 function displayFullStory() {
     const content = document.getElementById('gameContent');
     content.innerHTML = `
-        <h2>세계의 빛 - 이야기</h2>
-        <div class="story-text">
+        <h2>세계의 빛 - 스토리</h2>
+        <div class="story-text" style="color:var(--cyan);">
             <p>세계의 빛에 오신 여러분을 환영합니다.</p>
             <p>이 세계의 인간과 마족, 두 종족은 오랜 기간 전쟁을 벌였습니다.</p>
             <p>그러나, 인간이 마족의 힘을 무력화하는 '세계수'를 발견한 후</p>
@@ -426,7 +426,7 @@ function displayFullStory() {
             <p>세계수의 힘이 약화된다면 다시 전쟁이 시작될 것입니다.</p>
             <p>그래서 당신은, 마왕성에 들어가</p>
             <p>그들의 힘의 근원을 가지고 있는 마왕을 처치하게 됩니다.</p>
-            <p style="font-weight:bold; color:var(--amber); margin-top:20px;">
+            <p style="font-weight:bold; color:var(--cyan); margin-top:20px;">
                 마왕을 격퇴하고, 인간의 평화를 지켜주세요!
             </p>
         </div>
